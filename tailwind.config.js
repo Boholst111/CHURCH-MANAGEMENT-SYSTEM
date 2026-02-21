@@ -2,9 +2,8 @@
 module.exports = {
   darkMode: 'class',
   content: [
-    './resources/**/*.blade.php',
-    './resources/**/*.js',
-    './resources/**/*.jsx',
+    './resources/js/**/*.{js,jsx,ts,tsx}',
+    './resources/views/**/*.blade.php',
   ],
   theme: {
     extend: {

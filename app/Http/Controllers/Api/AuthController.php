@@ -17,7 +17,7 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'email' => 'required|email',
-            'password' => 'required|string|min:6',
+            'password' => 'required|string|min:8',
         ]);
 
         $user = User::where('email', $validated['email'])->first();
@@ -28,9 +28,23 @@ class AuthController extends Controller
             ]);
         }
 
+        // Create token
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        // Log login activity
+        \App\Models\Activity::create([
+            'user_id' => $user->id,
+            'action' => 'login',
+            'entity_type' => 'user',
+            'entity_id' => $user->id,
+            'description' => 'User logged in',
+            'ip_address' => $request->ip(),
+        ]);
+
         return response()->json([
+            'success' => true,
             'user' => $user,
-            'token' => $user->createToken('auth_token')->plainTextToken,
+            'token' => $token,
         ]);
     }
 
@@ -42,18 +56,24 @@ class AuthController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|unique:users',
-            'password' => 'required|string|min:6',
-            'role' => 'sometimes|in:admin,faculty,student',
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'
+            ],
+            'role' => 'sometimes|in:admin,staff,readonly',
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => $validated['role'] ?? 'student',
+            'role' => $validated['role'] ?? 'readonly',
         ]);
 
         return response()->json([
+            'success' => true,
             'user' => $user,
             'token' => $user->createToken('auth_token')->plainTextToken,
         ], 201);
@@ -65,25 +85,10 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user();
-        $data = $user;
-
-        // Load role-specific data
-        if ($user->role === 'student') {
-            $student = $user->student()->with(['course.department', 'academicYear'])->first();
-            if ($student) {
-                $data = array_merge($user->toArray(), $student->toArray());
-            }
-        } elseif ($user->role === 'faculty') {
-            $faculty = $user->faculty()->with('department')->first();
-            if ($faculty) {
-                $data = array_merge($user->toArray(), $faculty->toArray());
-            }
-        }
 
         return response()->json([
             'success' => true,
-            'user' => $user,
-            'data' => $data
+            'user' => $user
         ]);
     }
 
@@ -95,7 +100,12 @@ class AuthController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|string|email|unique:users,email,' . $request->user()->id,
-            'password' => 'sometimes|string|min:6',
+            'password' => [
+                'sometimes',
+                'string',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'
+            ],
             'phone' => 'sometimes|string|max:20',
             'address' => 'sometimes|string|max:500',
         ]);
@@ -124,25 +134,10 @@ class AuthController extends Controller
 
         $user->save();
 
-        // Load role-specific data for response
-        $data = $user;
-        if ($user->role === 'student') {
-            $student = $user->student()->with(['course.department', 'academicYear'])->first();
-            if ($student) {
-                $data = array_merge($user->toArray(), $student->toArray());
-            }
-        } elseif ($user->role === 'faculty') {
-            $faculty = $user->faculty()->with('department')->first();
-            if ($faculty) {
-                $data = array_merge($user->toArray(), $faculty->toArray());
-            }
-        }
-
         return response()->json([
             'success' => true,
             'message' => 'Profile updated successfully',
-            'user' => $user,
-            'data' => $data
+            'user' => $user
         ]);
     }
 
@@ -151,9 +146,26 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        // Log logout activity before revoking token
+        \App\Models\Activity::create([
+            'user_id' => $request->user()->id,
+            'action' => 'logout',
+            'entity_type' => 'user',
+            'entity_id' => $request->user()->id,
+            'description' => 'User logged out',
+            'ip_address' => $request->ip(),
+        ]);
 
-        return response()->json(['message' => 'Logged out successfully']);
+        // Revoke current token if it exists
+        $token = $request->user()->currentAccessToken();
+        if ($token) {
+            $token->delete();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logged out successfully'
+        ]);
     }
 
     /**

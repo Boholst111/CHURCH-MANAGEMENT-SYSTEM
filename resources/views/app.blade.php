@@ -3,22 +3,29 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    <title>{{ config('app.name', 'Laravel') }}</title>
-
-    <!-- Styles -->
-    <link href="{{ mix('css/app.css') }}" rel="stylesheet">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="description" content="Mahayahay Free Methodist Church Management System - A comprehensive solution for church administration">
     
-    <!-- Scripts -->
-    <script src="{{ mix('js/app.js') }}" defer></script>
+    <title>Church Management System</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ asset('logo192.png') }}">
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
     
     <!-- Fonts -->
-    <link rel="preload" href="{{ asset('fonts/Inter-Regular.woff2') }}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{{ asset('fonts/Inter-Medium.woff2') }}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{{ asset('fonts/Inter-Bold.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ mix('css/app.css') }}">
 </head>
-<body class="font-sans antialiased">
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    
+    <!-- Scripts -->
+    <script src="{{ mix('js/app.js') }}"></script>
 </body>
 </html>

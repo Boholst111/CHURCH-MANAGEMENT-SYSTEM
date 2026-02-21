@@ -12,7 +12,7 @@ const path = require('path');
  |
  */
 
-mix.js('resources/js/index.js', 'public/js/app.js')
+mix.ts('resources/js/index.tsx', 'public/js/app.js')
    .react()
    .postCss('resources/css/app.css', 'public/css', [
        require('tailwindcss'),
@@ -23,18 +23,22 @@ mix.js('resources/js/index.js', 'public/js/app.js')
            chunkFilename: 'js/[name].js?id=[chunkhash]',
        },
        resolve: {
-           extensions: ['.js', '.jsx'],
+           extensions: ['.js', '.jsx', '.ts', '.tsx'],
            alias: {
                '@': path.resolve('resources/js'),
            },
        },
-   })
-   .version();
+   });
 
 // Development settings
 if (!mix.inProduction()) {
     mix.sourceMaps()
        .webpackConfig({
-           devtool: 'source-map'
+           devtool: 'inline-source-map'
        });
+}
+
+// Production settings
+if (mix.inProduction()) {
+    mix.version();
 }

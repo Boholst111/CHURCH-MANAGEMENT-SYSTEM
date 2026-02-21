@@ -3,280 +3,169 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Department;
-use App\Models\AcademicYear;
-use App\Models\Course;
+use App\Models\ChurchSettings;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 
 class SettingsController extends Controller
 {
     /**
-     * Get settings data
+     * Get church settings
+     *
+     * @return JsonResponse
      */
-    public function index()
+    public function getChurchSettings(): JsonResponse
     {
-        $settings = [
-            'departments' => Department::active()->get(),
-            'academic_years' => AcademicYear::active()->get(),
-        ];
-
-        return response()->json([
-            'success' => true,
-            'data' => $settings,
-        ]);
-    }
-
-    /**
-     * Get archived data
-     */
-    public function archive()
-    {
-        $archivedData = [
-            'departments' => Department::archived()->get(),
-            'courses' => Course::archived()->with('department')->get(),
-            'academic_years' => AcademicYear::archived()->get(),
-            'students' => \App\Models\Student::archived()->with('user', 'course', 'department', 'academicYear')->get(),
-            'faculty' => \App\Models\Faculty::archived()->with('user', 'department')->get(),
-        ];
-
-        return response()->json([
-            'success' => true,
-            'data' => $archivedData,
-        ]);
-    }
-
-    /**
-     * Get active academic years (public route)
-     */
-    public function getAcademicYears()
-    {
-        return response()->json(['success' => true, 'data' => AcademicYear::active()->get()]);
-    }
-
-    /**
-     * Get active departments (public route)
-     */
-    public function getDepartments()
-    {
-        return response()->json(['success' => true, 'data' => Department::active()->get()]);
-    }
-
-    /**
-     * Get active courses (public route)
-     */
-    public function getCourses()
-    {
-        return response()->json(['success' => true, 'data' => Course::active()->with('department')->get()]);
-    }
-
-    /**
-     * Store a new department
-     */
-    public function storeDepartment(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:10|unique:departments',
-            'description' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
+        try {
+            // Get the first (and should be only) church settings record
+            $settings = ChurchSettings::first();
+            
+            if (!$settings) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Church settings not found',
+                ], 404);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => $settings,
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
+                'message' => 'Failed to retrieve church settings',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        $department = Department::create($request->all());
-
-        return response()->json([
-            'success' => true,
-            'data' => $department,
-            'message' => 'Department created successfully',
-        ], 201);
     }
 
     /**
-     * Update a department
+     * Update church settings
+     *
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function updateDepartment(Request $request, $id)
+    public function updateChurchSettings(Request $request): JsonResponse
     {
-        $department = Department::findOrFail($id);
-
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:10|unique:departments,code,' . $id,
-            'description' => 'nullable|string',
-            'status' => 'sometimes|in:active,inactive',
-        ]);
-
-        if ($validator->fails()) {
+        try {
+            $validator = Validator::make($request->all(), ChurchSettings::validationRules());
+            
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors(),
+                ], 400);
+            }
+            
+            // Get or create the church settings record
+            $settings = ChurchSettings::first();
+            
+            if (!$settings) {
+                $settings = ChurchSettings::create($validator->validated());
+            } else {
+                $settings->update($validator->validated());
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Church settings updated successfully',
+                'data' => $settings,
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
+                'message' => 'Failed to update church settings',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        $department->update($request->all());
-
-        return response()->json([
-            'success' => true,
-            'data' => $department,
-            'message' => 'Department updated successfully',
-        ]);
     }
 
     /**
-     * Archive a department
+     * Get notification preferences for the authenticated user
+     *
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function destroyDepartment($id)
+    public function getNotificationPreferences(Request $request): JsonResponse
     {
-        $department = Department::findOrFail($id);
-        $department->update(['archived' => true]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Department archived successfully',
-        ]);
-    }
-
-    /**
-     * Store a new academic year
-     */
-    public function storeAcademicYear(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:50',
-            'start_year' => 'required|integer|min:2000|max:2100',
-            'end_year' => 'required|integer|min:2000|max:2100|gte:start_year',
-            'is_current' => 'boolean',
-        ]);
-
-        if ($validator->fails()) {
+        try {
+            $user = $request->user();
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'email_notifications' => $user->email_notifications ?? true,
+                    'sms_notifications' => $user->sms_notifications ?? false,
+                    'system_notifications' => $user->system_notifications ?? true,
+                ],
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
+                'message' => 'Failed to retrieve notification preferences',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        // If setting as current, unset other current years
-        if ($request->is_current) {
-            AcademicYear::where('is_current', true)->update(['is_current' => false]);
-        }
-
-        $academicYear = AcademicYear::create($request->all());
-
-        return response()->json([
-            'success' => true,
-            'data' => $academicYear,
-            'message' => 'Academic year created successfully',
-        ], 201);
     }
 
     /**
-     * Update an academic year
+     * Update notification preferences for the authenticated user
+     *
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function updateAcademicYear(Request $request, $id)
+    public function updateNotificationPreferences(Request $request): JsonResponse
     {
-        $academicYear = AcademicYear::findOrFail($id);
-
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:50',
-            'start_year' => 'required|integer|min:2000|max:2100',
-            'end_year' => 'required|integer|min:2000|max:2100|gte:start_year',
-            'is_current' => 'boolean',
-            'status' => 'sometimes|in:active,inactive',
-        ]);
-
-        if ($validator->fails()) {
+        try {
+            $validator = Validator::make($request->all(), [
+                'email_notifications' => 'nullable|boolean',
+                'sms_notifications' => 'nullable|boolean',
+                'system_notifications' => 'nullable|boolean',
+            ]);
+            
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors(),
+                ], 400);
+            }
+            
+            $user = $request->user();
+            $validated = $validator->validated();
+            
+            // Update only the fields that were provided
+            if (isset($validated['email_notifications'])) {
+                $user->email_notifications = $validated['email_notifications'];
+            }
+            if (isset($validated['sms_notifications'])) {
+                $user->sms_notifications = $validated['sms_notifications'];
+            }
+            if (isset($validated['system_notifications'])) {
+                $user->system_notifications = $validated['system_notifications'];
+            }
+            
+            $user->save();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Notification preferences updated successfully',
+                'data' => [
+                    'email_notifications' => $user->email_notifications ?? true,
+                    'sms_notifications' => $user->sms_notifications ?? false,
+                    'system_notifications' => $user->system_notifications ?? true,
+                ],
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
+                'message' => 'Failed to update notification preferences',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        // If setting as current, unset other current years
-        if ($request->is_current) {
-            AcademicYear::where('is_current', true)->where('id', '!=', $id)->update(['is_current' => false]);
-        }
-
-        $academicYear->update($request->all());
-
-        return response()->json([
-            'success' => true,
-            'data' => $academicYear,
-            'message' => 'Academic year updated successfully',
-        ]);
-    }
-
-    /**
-     * Archive an academic year
-     */
-    public function destroyAcademicYear($id)
-    {
-        $academicYear = AcademicYear::findOrFail($id);
-        $academicYear->update(['archived' => true]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Academic year archived successfully',
-        ]);
-    }
-
-    /**
-     * Restore a department
-     */
-    public function restoreDepartment($id)
-    {
-        $department = Department::findOrFail($id);
-        $department->update(['archived' => false]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Department restored successfully',
-        ]);
-    }
-
-    /**
-     * Restore an academic year
-     */
-    public function restoreAcademicYear($id)
-    {
-        $academicYear = AcademicYear::findOrFail($id);
-        $academicYear->update(['archived' => false]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Academic year restored successfully',
-        ]);
-    }
-
-    /**
-     * Restore a student
-     */
-    public function restoreStudent($id)
-    {
-        $student = \App\Models\Student::findOrFail($id);
-        $student->update(['archived' => false]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Student restored successfully',
-        ]);
-    }
-
-    /**
-     * Restore a faculty member
-     */
-    public function restoreFaculty($id)
-    {
-        $faculty = \App\Models\Faculty::findOrFail($id);
-        $faculty->update(['archived' => false]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Faculty member restored successfully',
-        ]);
     }
 }

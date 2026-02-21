@@ -1,7 +1,7 @@
 {
-  "name": "student-faculty-management-system",
+  "name": "church-management-system",
   "version": "1.0.0",
-  "description": "A comprehensive student and faculty management system",
+  "description": "A comprehensive church management system for Mahayahay Free Methodist Church",
   "private": true,
   "scripts": {
     "dev": "npm run development",
@@ -11,16 +11,18 @@
     "hot": "mix watch --hot",
     "prod": "npm run production",
     "production": "mix --production",
-    "build": "mix --production",
     "clean": "rm -rf public/js public/css public/mix-manifest.json",
+    "test": "jest --config=jest.config.js",
     "lint": "eslint resources/js/**/*.{js,jsx}",
     "format": "prettier --write 'resources/js/**/*.{js,jsx}'"
   },
   "keywords": [
-    "student",
-    "faculty",
+    "church",
     "management",
-    "education"
+    "members",
+    "leadership",
+    "finance",
+    "events"
   ],
   "author": "Your Name",
   "license": "MIT",
@@ -28,7 +30,7 @@
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-slot": "^1.0.2",
     "apexcharts": "^5.3.6",
-    "axios": "^1.13.2",
+    "axios": "^1.6.2",
     "class-variance-authority": "^0.7.0",
     "classnames": "^2.5.1",
     "clsx": "^2.0.0",
@@ -39,17 +41,37 @@
     "react-apexcharts": "^1.8.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.30.1",
-    "recharts": "^2.15.4",
-    "tailwind-merge": "^2.0.0"
+    "recharts": "^3.7.0",
+    "tailwind-merge": "^2.1.0",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.23.3",
+    "@babel/preset-typescript": "^7.23.3",
+    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.0-rc.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^16.18.68",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
     "autoprefixer": "^10.4.16",
+    "axios-mock-adapter": "^2.1.0",
+    "fast-check": "^4.5.3",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
     "laravel-mix": "^6.0.49",
-    "postcss": "^8.4.31",
+    "postcss": "^8.4.32",
+    "react-refresh": "^0.10.0",
     "resolve-url-loader": "^5.0.0",
     "sass": "^1.69.5",
     "sass-loader": "^12.6.0",
-    "tailwindcss": "^3.3.5"
+    "tailwindcss": "^3.3.6",
+    "ts-jest": "^29.4.6",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.9.3"
   }
 }

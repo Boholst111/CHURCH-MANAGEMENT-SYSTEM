@@ -19,15 +19,28 @@ class AddAcademicYearIdToStudentsTable extends Migration
         });
 
         // Migrate data
-        DB::statement("
-            UPDATE students 
-            SET academic_year_id = (
-                SELECT id FROM academic_years 
-                WHERE name LIKE CONCAT(academic_year, '-%') 
-                LIMIT 1
-            ) 
-            WHERE academic_year IS NOT NULL
-        ");
+        $driver = DB::getDriverName();
+        if ($driver === 'sqlite') {
+            DB::statement("
+                UPDATE students 
+                SET academic_year_id = (
+                    SELECT id FROM academic_years 
+                    WHERE name LIKE academic_year || '-%' 
+                    LIMIT 1
+                ) 
+                WHERE academic_year IS NOT NULL
+            ");
+        } else {
+            DB::statement("
+                UPDATE students 
+                SET academic_year_id = (
+                    SELECT id FROM academic_years 
+                    WHERE name LIKE CONCAT(academic_year, '-%') 
+                    LIMIT 1
+                ) 
+                WHERE academic_year IS NOT NULL
+            ");
+        }
 
         Schema::table('students', function (Blueprint $table) {
             $table->dropColumn('academic_year');

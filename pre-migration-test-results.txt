@@ -1,0 +1,77 @@
+Pre-Migration Test Results
+=========================
+Date: 2025-01-XX
+Command: cd client && npm test -- --watchAll=false
+
+Test Summary:
+-------------
+Test Suites: 12 failed, 57 passed, 69 total
+Tests:       98 failed, 796 passed, 894 total
+Snapshots:   0 total
+Time:        99.02 s
+
+Passing Tests: 796
+Failing Tests: 98
+Total Tests: 894
+
+Failed Test Suites:
+-------------------
+1. src/pages/__tests__/Members.test.tsx
+   - Multiple tests failing with "createRoot(...): Target container is not a DOM element" error
+   - Affected tests in "Members Page - CSV Export (Task 15.1)" suite
+
+2. src/__tests__/e2e/data-export.e2e.test.tsx
+   - Multiple tests failing with "Cannot read properties of undefined (reading 'mockResolvedValue')"
+   - Affected suites:
+     * CSV Export Workflow (Validates Requirements 11.1, 11.3)
+     * PDF Export Workflow (Validates Requirements 11.1, 11.5)
+     * Export File Naming (Validates Requirement 11.5)
+
+3. src/pages/__tests__/Reports.test.tsx
+   - Test failing: "displays financial summary when data is loaded"
+   - Unable to find element with text "Total Giving"
+   - Component shows "Loading financial data..." instead
+
+4. src/__tests__/e2e/auth-authorization.e2e.test.tsx
+   - Multiple tests failing with text matching issues
+   - Affected tests:
+     * "should prevent readonly user from accessing admin-only pages"
+     * "should maintain session across page navigation"
+     * "should show appropriate error message for insufficient permissions"
+
+5. src/components/leadership/__tests__/ProfileCard.property.test.tsx
+   - Test suite failed: "Your test suite must contain at least one test"
+
+6. src/__tests__/e2e/workflows.integration.test.tsx
+   - Multiple tests failing with undefined mock properties
+   - Affected workflows:
+     * Complete Add Member Workflow
+     * Complete Record Tithe Workflow
+     * Complete Generate Report Workflow
+
+7. src/components/settings/__tests__/ChurchDetailsForm.property.test.tsx
+   - Multiple property-based tests timing out (5000ms and 30000ms timeouts)
+   - One test failing after 1 iteration with counterexample
+   - Affected tests:
+     * "should reject settings with missing required fields and show error messages"
+     * "should reject settings with invalid field formats and show specific error messages"
+     * "should accept and submit valid church settings data without errors"
+     * "should display multiple error messages when multiple fields are invalid"
+     * "should clear error message when user corrects an invalid field"
+     * "should not show required error for optional website field"
+
+Common Error Patterns:
+----------------------
+1. DOM element errors: "createRoot(...): Target container is not a DOM element"
+2. Mock function errors: "Cannot read properties of undefined (reading 'mockResolvedValue')"
+3. Text matching errors: "Unable to find an element with the text"
+4. Property test timeouts: Tests exceeding 5000ms and 30000ms timeouts
+5. Empty test suite error: Test suite must contain at least one test
+
+Notes:
+------
+- The majority of tests (796 out of 894) are passing
+- Failures appear to be concentrated in specific test suites
+- Many failures are related to mocking issues and DOM setup
+- Property-based tests in ChurchDetailsForm are experiencing timeout issues
+- These test results will be used as a baseline for post-migration validation

@@ -4,11 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\StudentController;
-use App\Http\Controllers\Api\FacultyController;
-use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\MemberController;
 use App\Http\Controllers\Api\SettingsController;
-use App\Http\Controllers\Api\ReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,26 +36,13 @@ Route::get('/config', function () {
                     'profile' => '/profile',
                     'me' => '/user',
                 ],
-                'students' => '/students',
-                'faculty' => '/faculty',
-                'courses' => '/courses',
-                'departments' => '/departments',
-                'academicYears' => '/academic-years',
-                'reports' => [
-                    'index' => '/reports',
-                    'students' => '/reports/students',
-                    'faculty' => '/reports/faculty',
-                ],
-                'export' => [
-                    'students_pdf' => '/export/students/pdf',
-                    'students_excel' => '/export/students/excel',
-                    'faculty_pdf' => '/export/faculty/pdf',
-                    'faculty_excel' => '/export/faculty/excel',
-                    'enrollment_excel' => '/export/enrollment/excel',
-                    'enrollment_pdf' => '/export/enrollment/pdf',
-                ],
+                'members' => '/members',
+                'leadership' => '/leadership',
+                'smallGroups' => '/small-groups',
+                'finance' => '/finance',
+                'events' => '/events',
+                'reports' => '/reports',
                 'settings' => '/settings',
-                'archive' => '/archive',
             ]
         ]);
     } catch (\Exception $e) {
@@ -76,26 +60,13 @@ Route::get('/config', function () {
                     'profile' => '/profile',
                     'me' => '/user',
                 ],
-                'students' => '/students',
-                'faculty' => '/faculty',
-                'courses' => '/courses',
-                'departments' => '/departments',
-                'academicYears' => '/academic-years',
-                'reports' => [
-                    'index' => '/reports',
-                    'students' => '/reports/students',
-                    'faculty' => '/reports/faculty',
-                ],
-                'export' => [
-                    'students_pdf' => '/export/students/pdf',
-                    'students_excel' => '/export/students/excel',
-                    'faculty_pdf' => '/export/faculty/pdf',
-                    'faculty_excel' => '/export/faculty/excel',
-                    'enrollment_excel' => '/export/enrollment/excel',
-                    'enrollment_pdf' => '/export/enrollment/pdf',
-                ],
+                'members' => '/members',
+                'leadership' => '/leadership',
+                'smallGroups' => '/small-groups',
+                'finance' => '/finance',
+                'events' => '/events',
+                'reports' => '/reports',
                 'settings' => '/settings',
-                'archive' => '/archive',
             ]
         ]);
     }
@@ -106,48 +77,78 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 
 // Public routes (no auth required) - GET only
-Route::get('/academic-years', [SettingsController::class, 'getAcademicYears']);
-Route::get('/departments', [SettingsController::class, 'getDepartments']);
-Route::get('/courses', [CourseController::class, 'index']);
+// None currently needed for church management system
 
 // Protected Routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'log.activity'])->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'me']);
-    Route::put('/profile', [AuthController::class, 'updateProfile']);
+    Route::put('/profile', [AuthController::class, 'updateProfile'])->middleware('role:admin,staff');
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/dashboard', [DashboardController::class, 'index']);
-    Route::get('/stats', [DashboardController::class, 'stats']);
-    Route::get('/students/stats', [StudentController::class, 'statistics']);
-    Route::apiResource('students', StudentController::class);
-    Route::patch('/students/{id}/restore', [StudentController::class, 'restore']);
-    Route::get('/faculty/stats', [FacultyController::class, 'statistics']);
-    Route::apiResource('faculty', FacultyController::class);
-    Route::patch('/faculty/{id}/restore', [FacultyController::class, 'restore']);
-    Route::apiResource('courses', CourseController::class);
-    Route::patch('/courses/{id}/restore', [CourseController::class, 'restore']);
-    Route::get('/reports', [ReportController::class, 'index']);
-    Route::get('/reports/students', [ReportController::class, 'studentDetails']);
-    Route::get('/reports/faculty', [ReportController::class, 'facultyDetails']);
-    Route::get('/export/students/pdf', [ReportController::class, 'exportStudentsPDF']);
-    Route::get('/export/students/excel', [ReportController::class, 'exportStudentsExcel']);
-    Route::get('/export/faculty/pdf', [ReportController::class, 'exportFacultyPDF']);
-    Route::get('/export/faculty/excel', [ReportController::class, 'exportFacultyExcel']);
-    Route::get('/export/enrollment/excel', [ReportController::class, 'exportEnrollmentExcel']);
-    Route::get('/export/enrollment/pdf', [ReportController::class, 'exportEnrollmentPDF']);
-    Route::get('/settings', [SettingsController::class, 'index']);
-    Route::get('/archive', [SettingsController::class, 'archive']);
-    Route::post('/departments', [SettingsController::class, 'storeDepartment']);
-    Route::put('/departments/{id}', [SettingsController::class, 'updateDepartment']);
-    Route::delete('/departments/{id}', [SettingsController::class, 'destroyDepartment']);
-    Route::patch('/departments/{id}/restore', [SettingsController::class, 'restoreDepartment']);
-    Route::post('/academic-years', [SettingsController::class, 'storeAcademicYear']);
-    Route::put('/academic-years/{id}', [SettingsController::class, 'updateAcademicYear']);
-    Route::delete('/academic-years/{id}', [SettingsController::class, 'destroyAcademicYear']);
-    Route::patch('/academic-years/{id}/restore', [SettingsController::class, 'restoreAcademicYear']);
-    Route::patch('/students/{id}/restore', [SettingsController::class, 'restoreStudent']);
-    Route::patch('/faculty/{id}/restore', [SettingsController::class, 'restoreFaculty']);
+    
+    // Dashboard Routes
+    Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
+    Route::get('/dashboard/attendance', [DashboardController::class, 'attendance']);
+    Route::get('/dashboard/activities', [DashboardController::class, 'activities']);
+    
+    // Member Routes
+    Route::get('/members', [MemberController::class, 'index']);
+    Route::get('/members/export', [MemberController::class, 'export']); // Must be before {id} route
+    Route::post('/members', [MemberController::class, 'store'])->middleware('role:admin,staff');
+    Route::get('/members/{id}', [MemberController::class, 'show']);
+    Route::put('/members/{id}', [MemberController::class, 'update'])->middleware('role:admin,staff');
+    Route::delete('/members/{id}', [MemberController::class, 'destroy'])->middleware('role:admin,staff');
+    
+    // Leadership Routes
+    Route::get('/leadership', [\App\Http\Controllers\Api\LeadershipController::class, 'index']);
+    Route::post('/leadership', [\App\Http\Controllers\Api\LeadershipController::class, 'store'])->middleware('role:admin,staff');
+    Route::get('/leadership/{id}', [\App\Http\Controllers\Api\LeadershipController::class, 'show']);
+    Route::put('/leadership/{id}', [\App\Http\Controllers\Api\LeadershipController::class, 'update'])->middleware('role:admin,staff');
+    Route::delete('/leadership/{id}', [\App\Http\Controllers\Api\LeadershipController::class, 'destroy'])->middleware('role:admin,staff');
+    
+    // Small Group Routes
+    Route::get('/small-groups', [\App\Http\Controllers\Api\SmallGroupController::class, 'index']);
+    Route::post('/small-groups', [\App\Http\Controllers\Api\SmallGroupController::class, 'store'])->middleware('role:admin,staff');
+    Route::get('/small-groups/{id}', [\App\Http\Controllers\Api\SmallGroupController::class, 'show']);
+    Route::get('/small-groups/{id}/members', [\App\Http\Controllers\Api\SmallGroupController::class, 'members']);
+    Route::put('/small-groups/{id}', [\App\Http\Controllers\Api\SmallGroupController::class, 'update'])->middleware('role:admin,staff');
+    Route::delete('/small-groups/{id}', [\App\Http\Controllers\Api\SmallGroupController::class, 'destroy'])->middleware('role:admin,staff');
+    
+    // Finance Routes
+    Route::get('/finance/tithes', [\App\Http\Controllers\Api\FinanceController::class, 'getTithes']);
+    Route::post('/finance/tithes', [\App\Http\Controllers\Api\FinanceController::class, 'store'])->middleware('role:admin,staff');
+    Route::get('/finance/summary', [\App\Http\Controllers\Api\FinanceController::class, 'getSummary']);
+    
+    // Event Routes
+    Route::get('/events', [\App\Http\Controllers\Api\EventController::class, 'index']);
+    Route::post('/events', [\App\Http\Controllers\Api\EventController::class, 'store'])->middleware('role:admin,staff');
+    Route::get('/events/{id}', [\App\Http\Controllers\Api\EventController::class, 'show']);
+    Route::put('/events/{id}', [\App\Http\Controllers\Api\EventController::class, 'update'])->middleware('role:admin,staff');
+    Route::delete('/events/{id}', [\App\Http\Controllers\Api\EventController::class, 'destroy'])->middleware('role:admin,staff');
+    Route::put('/events/{id}/complete', [\App\Http\Controllers\Api\EventController::class, 'complete'])->middleware('role:admin,staff');
+    
+    // Report Routes
+    Route::get('/reports/financial', [\App\Http\Controllers\Api\ReportController::class, 'getFinancialReport']);
+    Route::get('/reports/demographics', [\App\Http\Controllers\Api\ReportController::class, 'getDemographicReport']);
+    Route::post('/reports/export-pdf', [\App\Http\Controllers\Api\ReportController::class, 'exportPdf']);
+    
+    // Settings Routes
+    Route::get('/settings/church', [SettingsController::class, 'getChurchSettings']);
+    Route::put('/settings/church', [SettingsController::class, 'updateChurchSettings'])->middleware('role:admin,staff');
+    Route::get('/settings/notifications', [SettingsController::class, 'getNotificationPreferences']);
+    Route::put('/settings/notifications', [SettingsController::class, 'updateNotificationPreferences']);
+    
+    // User Management Routes (admin only)
+    Route::get('/users', [\App\Http\Controllers\Api\UserController::class, 'index'])->middleware('role:admin');
+    Route::post('/users', [\App\Http\Controllers\Api\UserController::class, 'store'])->middleware('role:admin');
+    Route::get('/users/{id}', [\App\Http\Controllers\Api\UserController::class, 'show'])->middleware('role:admin');
+    Route::put('/users/{id}', [\App\Http\Controllers\Api\UserController::class, 'update'])->middleware('role:admin');
+    Route::delete('/users/{id}', [\App\Http\Controllers\Api\UserController::class, 'destroy'])->middleware('role:admin');
+    
+    // Activity Log Routes (admin only)
+    Route::get('/activities', [\App\Http\Controllers\Api\ActivityController::class, 'index'])->middleware('role:admin');
+    Route::get('/activities/users', [\App\Http\Controllers\Api\ActivityController::class, 'getUsers'])->middleware('role:admin');
 });

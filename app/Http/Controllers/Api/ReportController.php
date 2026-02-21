@@ -3,659 +3,116 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Student;
-use App\Models\Faculty;
-use App\Models\Course;
-use App\Models\Department;
-use App\Models\AcademicYear;
+use App\Services\ReportService;
 use Illuminate\Http\Request;
-use Maatwebsite\Excel\Facades\Excel;
-use PDF;
+use Illuminate\Http\JsonResponse;
 
 class ReportController extends Controller
 {
-    /**
-     * Get reports overview
-     */
-    public function index()
+    protected $reportService;
+
+    public function __construct(ReportService $reportService)
     {
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'students' => [
-                    'total' => Student::count(),
-                    'by_department' => Student::selectRaw('department_id, COUNT(*) as count')
-                        ->groupBy('department_id')
-                        ->with('department:id,name')
-                        ->get(),
-                ],
-                'faculty' => [
-                    'total' => Faculty::count(),
-                    'by_department' => Faculty::selectRaw('department_id, COUNT(*) as count')
-                        ->groupBy('department_id')
-                        ->with('department:id,name')
-                        ->get(),
-                ],
-                'courses' => [
-                    'total' => Course::count(),
-                ],
-                'departments' => Department::count(),
-            ]
-        ]);
+        $this->reportService = $reportService;
     }
 
     /**
-     * Get overall system statistics
+     * Get financial report data.
+     * 
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function dashboard()
+    public function getFinancialReport(Request $request): JsonResponse
     {
-        return response()->json([
-            'students' => [
-                'total' => Student::count(),
-                'by_department' => Student::selectRaw('department_id, COUNT(*) as count')
-                    ->groupBy('department_id')
-                    ->with('department:id,name')
-                    ->get(),
-            ],
-            'faculty' => [
-                'total' => Faculty::count(),
-                'by_department' => Faculty::selectRaw('department_id, COUNT(*) as count')
-                    ->groupBy('department_id')
-                    ->with('department:id,name')
-                    ->get(),
-            ],
-            'courses' => [
-                'total' => Course::count(),
-                'by_department' => Course::selectRaw('department_id, COUNT(*) as count')
-                    ->groupBy('department_id')
-                    ->with('department:id,name')
-                    ->get(),
-            ],
-            'departments' => Department::count(),
+        $validated = $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
-    }
 
-    /**
-     * Get enrollment report
-     */
-    public function enrollment()
-    {
-        $enrollmentData = Student::selectRaw('course_id, COUNT(*) as student_count')
-            ->groupBy('course_id')
-            ->with('course:id,name,code')
-            ->get();
+        // Default to last 12 months if no dates provided
+        $startDate = $validated['start_date'] ?? now()->subMonths(12)->format('Y-m-d');
+        $endDate = $validated['end_date'] ?? now()->format('Y-m-d');
 
-        return response()->json([
-            'enrollments' => $enrollmentData,
-            'total_enrollments' => Student::count(),
-        ]);
-    }
-
-    /**
-     * Get enrollment by department report
-     */
-    public function enrollmentByDepartment()
-    {
-        $data = Student::selectRaw('department_id, COUNT(*) as student_count')
-            ->groupBy('department_id')
-            ->with('department:id,name,code')
-            ->get();
-
-        return response()->json([
-            'department_enrollments' => $data,
-            'total_students' => Student::count(),
-        ]);
-    }
-
-    /**
-     * Get faculty distribution report
-     */
-    public function facultyDistribution()
-    {
-        $byDepartment = Faculty::selectRaw('department_id, COUNT(*) as count')
-            ->groupBy('department_id')
-            ->with('department:id,name')
-            ->get();
-
-        $byEmploymentType = Faculty::selectRaw('employment_type, COUNT(*) as count')
-            ->groupBy('employment_type')
-            ->get();
-
-        return response()->json([
-            'by_department' => $byDepartment,
-            'by_employment_type' => $byEmploymentType,
-            'total_faculty' => Faculty::count(),
-        ]);
-    }
-
-    /**
-     * Get academic year statistics
-     */
-    public function academicYears()
-    {
-        $years = AcademicYear::all();
+        $reportData = $this->reportService->generateFinancialReport(
+            $startDate,
+            $endDate
+        );
 
         return response()->json([
             'success' => true,
-            'data' => $years,
-            'current_year' => AcademicYear::where('is_current', true)->first(),
+            'data' => $reportData,
         ]);
     }
 
     /**
-     * Get detailed department report
+     * Get demographic report data.
+     * 
+     * @return JsonResponse
      */
-    public function departmentDetails($departmentId)
+    public function getDemographicReport(): JsonResponse
     {
-        $department = Department::with([
-            'courses',
-            'students' => function ($q) {
-                $q->selectRaw('department_id, COUNT(*) as count');
-            },
-            'faculty' => function ($q) {
-                $q->selectRaw('department_id, COUNT(*) as count');
-            },
-        ])->find($departmentId);
-
-        if (!$department) {
-            return response()->json(['error' => 'Department not found'], 404);
-        }
-
-        $courseEnrollment = Course::where('department_id', $departmentId)
-            ->with(['students' => function ($q) {
-                $q->selectRaw('COUNT(*) as count');
-            }])
-            ->get();
-
-        return response()->json([
-            'department' => $department,
-            'courses' => [
-                'total' => Course::where('department_id', $departmentId)->count(),
-                'enrollment_by_course' => $courseEnrollment,
-            ],
-            'students' => Student::where('department_id', $departmentId)->count(),
-            'faculty' => Faculty::where('department_id', $departmentId)->count(),
-        ]);
-    }
-
-    /**
-     * Get course statistics
-     */
-    public function courseStatistics()
-    {
-        $courses = Course::with('department')
-            ->withCount('students')
-            ->get();
-
-        return response()->json([
-            'courses' => $courses,
-            'average_enrollment' => $courses->avg('students_count'),
-            'total_courses' => $courses->count(),
-        ]);
-    }
-
-    /**
-     * Get student enrollment by academic year
-     */
-    public function studentsByAcademicYear()
-    {
-        $data = Student::selectRaw('academic_year, COUNT(*) as count')
-            ->groupBy('academic_year')
-            ->get();
-
-        return response()->json([
-            'enrollment_by_year' => $data,
-            'total_students' => Student::count(),
-        ]);
-    }
-
-    /**
-     * Generate system health report
-     */
-    public function systemHealth()
-    {
-        return response()->json([
-            'status' => 'healthy',
-            'database_status' => 'connected',
-            'statistics' => [
-                'total_users' => Student::count() + Faculty::count(),
-                'total_courses' => Course::count(),
-                'total_departments' => Department::count(),
-                'total_academic_years' => AcademicYear::count(),
-            ],
-            'timestamp' => now()->toIso8601String(),
-        ]);
-    }
-
-    /**
-     * Get student details report
-     */
-    public function studentDetails(Request $request)
-    {
-        $limit = $request->query('limit', 100);
-        $departmentId = $request->query('department_id');
-        $courseId = $request->query('course_id');
-        $academicYearId = $request->query('academic_year');
-        $category = $request->query('category');
-
-        $query = Student::with('user', 'course', 'department', 'academicYear');
-
-        if ($departmentId) {
-            $query->where('department_id', $departmentId);
-        }
-
-        if ($courseId) {
-            $query->where('course_id', $courseId);
-        }
-
-        if ($academicYearId) {
-            $query->where('academic_year_id', $academicYearId);
-        }
-
-        if ($category) {
-            $query->where('category', $category);
-        }
-
-        // Calculate statistics first
-        $allStudents = $query->get(); // Get all matching students for stats
-        $byDepartment = $allStudents->groupBy(function($item) {
-            return $item->department->name ?? 'Unknown';
-        })->map(function($group) {
-            return ['department' => $group->first()->department->name ?? 'Unknown', 'count' => $group->count()];
-        })->values();
-
-        $byCourse = $allStudents->groupBy(function($item) {
-            return $item->course->name ?? 'Unknown';
-        })->map(function($group) {
-            return ['course' => $group->first()->course->name ?? 'Unknown', 'count' => $group->count()];
-        })->values();
-
-        $byAcademicYear = $allStudents->groupBy(function($item) {
-            return $item->academicYear->name ?? 'Unknown';
-        })->map(function($group) {
-            return ['year' => $group->first()->academicYear->name ?? 'Unknown', 'count' => $group->count()];
-        })->values();
-
-        $byCategory = $allStudents->groupBy('category')->map(function($group) {
-            return ['category' => $group->first()->category ?? 'Unknown', 'count' => $group->count()];
-        })->values();
-
-        $students = $query->paginate($limit);
-
-        // Add academic year name to each student
-        $studentItems = $students->items();
-        foreach ($studentItems as $student) {
-            $student->academic_year_name = $student->academicYear?->name ?? 'N/A';
-        }
+        $reportData = $this->reportService->generateDemographicReport();
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'students' => $studentItems,
-                'statistics' => [
-                    'total' => $allStudents->count(),
-                    'byDepartment' => $byDepartment,
-                    'byCourse' => $byCourse,
-                    'byAcademicYear' => $byAcademicYear,
-                    'byCategory' => $byCategory
-                ],
-                'pagination' => [
-                    'total' => $students->total(),
-                    'per_page' => $students->perPage(),
-                    'current_page' => $students->currentPage(),
-                    'last_page' => $students->lastPage(),
-                ],
-            ]
+            'data' => $reportData,
         ]);
     }
 
     /**
-     * Get faculty details report
+     * Export report as PDF.
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\Response
      */
-    public function facultyDetails(Request $request)
+    public function exportPdf(Request $request)
     {
-        $limit = $request->query('limit', 100);
-        $departmentId = $request->query('department_id');
-        $employmentType = $request->query('employment_type');
-
-        $query = Faculty::with('user', 'department');
-
-        if ($departmentId) {
-            $query->where('department_id', $departmentId);
-        }
-
-        if ($employmentType) {
-            $query->where('employment_type', $employmentType);
-        }
-
-        // Calculate statistics first
-        $allFaculty = $query->get(); // Get all matching faculty for stats
-        $byDepartment = $allFaculty->groupBy(function($item) {
-            return $item->department->name ?? 'Unknown';
-        })->map(function($group) {
-            return ['department' => $group->first()->department->name ?? 'Unknown', 'count' => $group->count()];
-        })->values();
-
-        $byEmploymentType = $allFaculty->groupBy('employment_type')->map(function($group) {
-            return ['type' => $group->first()->employment_type ?? 'Unknown', 'count' => $group->count()];
-        })->values();
-
-        $averageSalary = $allFaculty->avg('salary') ?? 0;
-
-        $faculty = $query->paginate($limit);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'faculty' => $faculty->items(),
-                'statistics' => [
-                    'total' => $allFaculty->count(),
-                    'byDepartment' => $byDepartment,
-                    'byEmploymentType' => $byEmploymentType,
-                    'averageSalary' => round($averageSalary, 2)
-                ],
-                'pagination' => [
-                    'total' => $faculty->total(),
-                    'per_page' => $faculty->perPage(),
-                    'current_page' => $faculty->currentPage(),
-                    'last_page' => $faculty->lastPage(),
-                ],
-            ]
+        $validated = $request->validate([
+            'report_type' => 'required|in:financial,demographic,combined',
+            'start_date' => 'required_if:report_type,financial,combined|date',
+            'end_date' => 'required_if:report_type,financial,combined|date|after_or_equal:start_date',
         ]);
-    }
 
-    /**
-     * Export students to Excel
-     */
-    public function exportStudentsExcel(Request $request)
-    {
-        $departmentId = $request->query('department_id');
-        $courseId = $request->query('course_id');
-        $academicYearId = $request->query('academic_year');
-        $category = $request->query('category');
+        $reportType = $validated['report_type'];
         
-        $query = Student::with('user', 'course', 'department', 'academicYear');
-
-        if ($departmentId) {
-            $query->where('department_id', $departmentId);
-        }
-
-        if ($courseId) {
-            $query->where('course_id', $courseId);
-        }
-
-        if ($academicYearId) {
-            $query->where('academic_year_id', $academicYearId);
-        }
-
-        if ($category) {
-            $query->where('category', $category);
-        }
-
-        $students = $query->get();
-
-        // Create CSV content that Excel can read
-        $csv = "Student ID,Name,Email,Department,Course,Academic Year,Category,Phone\n";
+        // Log PDF export activity
+        $description = match ($reportType) {
+            'financial' => "Exported financial report PDF ({$validated['start_date']} to {$validated['end_date']})",
+            'demographic' => 'Exported demographic report PDF',
+            'combined' => "Exported combined report PDF ({$validated['start_date']} to {$validated['end_date']})",
+            default => 'Exported report PDF',
+        };
         
-        foreach ($students as $student) {
-            $csv .= sprintf(
-                '"%s","%s","%s","%s","%s","%s","%s","\'%s"' . "\n",
-                $student->student_id ?? 'N/A',
-                $student->user->name ?? 'N/A',
-                $student->user->email ?? 'N/A',
-                $student->department->name ?? 'N/A',
-                $student->course->name ?? 'N/A',
-                $student->academicYear->name ?? 'N/A',
-                $student->category ?? 'N/A',
-                $student->phone ?? 'N/A'
-            );
-        }
-
-        return response($csv, 200, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="students_' . date('Y-m-d_His') . '.csv"',
+        \App\Models\Activity::create([
+            'user_id' => $request->user()->id,
+            'action' => 'export',
+            'entity_type' => 'report',
+            'entity_id' => null,
+            'description' => $description,
+            'ip_address' => $request->ip(),
         ]);
-    }
 
-    /**
-     * Export faculty to Excel
-     */
-    public function exportFacultyExcel(Request $request)
-    {
-        $departmentId = $request->query('department_id');
-        $employmentType = $request->query('employment_type');
-        
-        $query = Faculty::with('user', 'department');
-
-        if ($departmentId) {
-            $query->where('department_id', $departmentId);
-        }
-
-        if ($employmentType) {
-            $query->where('employment_type', $employmentType);
-        }
-
-        $faculty_list = $query->get();
-
-        // Create CSV content that Excel can read
-        $csv = "Employee ID,Name,Email,Department,Position,Employment Type,Phone\n";
-        
-        foreach ($faculty_list as $faculty) {
-            $csv .= sprintf(
-                '"%s","%s","%s","%s","%s","%s","\'%s"' . "\n",
-                $faculty->employee_id ?? 'N/A',
-                $faculty->user->name ?? 'N/A',
-                $faculty->user->email ?? 'N/A',
-                $faculty->department->name ?? 'N/A',
-                $faculty->position ?? 'N/A',
-                ucfirst(str_replace('_', ' ', $faculty->employment_type ?? 'N/A')),
-                $faculty->phone ?? 'N/A'
-            );
-        }
-
-        return response($csv, 200, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="faculty_' . date('Y-m-d_His') . '.csv"',
-        ]);
-    }
-
-    /**
-     * Export enrollment report to Excel
-     */
-    public function exportEnrollmentExcel()
-    {
-        $courses = Course::with('students', 'department')->get();
-
-        // Create CSV
-        $csv = "Course Code,Course Name,Department,Credits,Enrolled Students,Description\n";
-        
-        foreach ($courses as $course) {
-            $csv .= sprintf(
-                '"%s","%s","%s","%s","%s","%s"' . "\n",
-                $course->code ?? 'N/A',
-                $course->name ?? 'N/A',
-                $course->department->name ?? 'N/A',
-                $course->credits ?? 'N/A',
-                $course->students->count() ?? 0,
-                str_replace('"', '""', $course->description ?? 'N/A')
-            );
-        }
-
-        return response($csv, 200, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="enrollment_' . date('Y-m-d_His') . '.csv"',
-        ]);
-    }
-
-    /**
-     * Export students to PDF
-     */
-    public function exportStudentsPDF(Request $request)
-    {
-        try {
-            // Increase memory limit and execution time for PDF generation
-            ini_set('memory_limit', '256M');
-            ini_set('max_execution_time', '300');
+        switch ($reportType) {
+            case 'financial':
+                return $this->reportService->generateFinancialPDF(
+                    $validated['start_date'],
+                    $validated['end_date']
+                );
             
-            $departmentId = $request->query('department_id');
-            $courseId = $request->query('course_id');
-            $academicYearId = $request->query('academic_year');
-            $category = $request->query('category');
+            case 'demographic':
+                return $this->reportService->generateDemographicPDF();
             
-            $query = Student::with(['user', 'course', 'department', 'academicYear']);
-
-            if ($departmentId) {
-                $query->where('department_id', $departmentId);
-            }
-
-            if ($courseId) {
-                $query->where('course_id', $courseId);
-            }
-
-            if ($academicYearId) {
-                $query->where('academic_year_id', $academicYearId);
-            }
-
-            if ($category) {
-                $query->where('category', $category);
-            }
-
-            $students = $query->get();
+            case 'combined':
+                return $this->reportService->generateCombinedPDF(
+                    $validated['start_date'],
+                    $validated['end_date']
+                );
             
-            // Prepare data for view
-            $data = [
-                'students' => $students,
-                'total' => $students->count(),
-                'generated_at' => now()->format('Y-m-d H:i:s')
-            ];
-            
-            // Try to use PDF, fallback to HTML view for testing
-            try {
-                $pdf = PDF::loadView('pdf.students', $data);
-                $pdf->setPaper('a4', 'landscape');
-                $pdf->setOption('enable-local-file-access', true);
-                
-                $filename = 'students_report_' . date('Y-m-d_His') . '.pdf';
-                return $pdf->stream($filename);
-            } catch (\Exception $pdfError) {
-                \Log::error('PDF generation failed: ' . $pdfError->getMessage());
-                \Log::error('PDF Error Stack: ' . $pdfError->getTraceAsString());
-                // Return as downloadable HTML if PDF fails
-                return response()->view('pdf.students', $data, 200, [
-                    'Content-Type' => 'text/html',
-                    'Content-Disposition' => 'attachment; filename="students_report_' . date('Y-m-d_His') . '.html"'
-                ]);
-            }
-        } catch (\Exception $e) {
-            \Log::error('Student PDF Export Error: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to generate PDF report',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Export faculty to PDF
-     */
-    public function exportFacultyPDF(Request $request)
-    {
-        try {
-            // Increase memory limit and execution time for PDF generation
-            ini_set('memory_limit', '256M');
-            ini_set('max_execution_time', '300');
-            
-            $departmentId = $request->query('department_id');
-            $employmentType = $request->query('employment_type');
-            
-            $query = Faculty::with(['user', 'department']);
-
-            if ($departmentId) {
-                $query->where('department_id', $departmentId);
-            }
-
-            if ($employmentType) {
-                $query->where('employment_type', $employmentType);
-            }
-
-            $faculty = $query->get();
-            
-            // Prepare data for view
-            $data = [
-                'faculty' => $faculty,
-                'total' => $faculty->count(),
-                'generated_at' => now()->format('Y-m-d H:i:s')
-            ];
-            
-            // Try to use PDF, fallback to HTML view for testing
-            try {
-                $pdf = PDF::loadView('pdf.faculty', $data);
-                $pdf->setPaper('a4', 'landscape');
-                $pdf->setOption('enable-local-file-access', true);
-                
-                $filename = 'faculty_report_' . date('Y-m-d_His') . '.pdf';
-                return $pdf->stream($filename);
-            } catch (\Exception $pdfError) {
-                \Log::error('PDF generation failed: ' . $pdfError->getMessage());
-                \Log::error('PDF Error Stack: ' . $pdfError->getTraceAsString());
-                // Return as downloadable HTML if PDF fails
-                return response()->view('pdf.faculty', $data, 200, [
-                    'Content-Type' => 'text/html',
-                    'Content-Disposition' => 'attachment; filename="faculty_report_' . date('Y-m-d_His') . '.html"'
-                ]);
-            }
-        } catch (\Exception $e) {
-            \Log::error('Faculty PDF Export Error: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to generate PDF report',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Export enrollment report to PDF
-     */
-    public function exportEnrollmentPDF()
-    {
-        try {
-            $enrollments = Student::with(['course', 'department', 'user', 'academicYear'])->get();
-            
-            // Prepare data for view
-            $data = [
-                'enrollments' => $enrollments,
-                'total' => $enrollments->count(),
-                'generated_at' => now()->format('Y-m-d H:i:s')
-            ];
-            
-            // Try to use PDF, fallback to HTML view for testing
-            try {
-                $pdf = PDF::loadView('pdf.enrollment', $data);
-                $pdf->setPaper('a4', 'landscape');
-                return $pdf->download('enrollment_report_' . date('Y-m-d_His') . '.pdf');
-            } catch (\Exception $pdfError) {
-                \Log::error('PDF generation failed: ' . $pdfError->getMessage());
-                // Return as downloadable HTML if PDF fails
-                return response()->view('pdf.enrollment', $data, 200, [
-                    'Content-Type' => 'text/html',
-                    'Content-Disposition' => 'attachment; filename="enrollment_report_' . date('Y-m-d_His') . '.html"'
-                ]);
-            }
-        } catch (\Exception $e) {
-            \Log::error('Enrollment PDF Export Error: ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to generate PDF report',
-                'error' => $e->getMessage()
-            ], 500);
+            default:
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid report type',
+                ], 400);
         }
     }
 }

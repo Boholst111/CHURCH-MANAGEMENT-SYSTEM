@@ -1,0 +1,137 @@
+/* Print-friendly styles for reports */
+@media print {
+  /* Hide navigation and controls when printing */
+  nav,
+  aside,
+  .sidebar,
+  .no-print,
+  button,
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Reset page margins */
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+
+  /* Ensure content fits on page */
+  body {
+    margin: 0;
+    padding: 0;
+    background: white;
+    color: black;
+  }
+
+  /* Make sure cards and containers print well */
+  .card,
+  .report-card {
+    border: 1px solid #e5e7eb;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    margin-bottom: 1rem;
+  }
+
+  /* Optimize chart printing */
+  .recharts-wrapper,
+  .recharts-surface {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Ensure text is readable */
+  h1, h2, h3, h4, h5, h6 {
+    color: black;
+    page-break-after: avoid;
+  }
+
+  /* Avoid breaking content across pages */
+  .report-section {
+    page-break-inside: avoid;
+  }
+
+  /* Show full URLs for links */
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+
+  /* Remove link underlines */
+  a {
+    text-decoration: none;
+    color: black;
+  }
+
+  /* Optimize table printing */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  table, th, td {
+    border: 1px solid #ddd;
+  }
+
+  th, td {
+    padding: 8px;
+    text-align: left;
+  }
+
+  /* Ensure proper spacing */
+  .space-y-6 > * + * {
+    margin-top: 1.5rem;
+  }
+
+  /* Hide scrollbars */
+  * {
+    overflow: visible !important;
+  }
+
+  /* Optimize grid layouts for print */
+  .grid {
+    display: block !important;
+  }
+
+  .grid > * {
+    margin-bottom: 1rem;
+  }
+
+  /* Ensure financial summary displays properly */
+  .financial-summary {
+    display: flex;
+    justify-content: space-around;
+    margin: 1rem 0;
+    page-break-inside: avoid;
+  }
+
+  /* Header styling for print */
+  .print-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid #333;
+    padding-bottom: 1rem;
+  }
+
+  /* Footer for print */
+  .print-footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 10px;
+    color: #666;
+    border-top: 1px solid #ddd;
+    padding-top: 0.5rem;
+  }
+}
+
+/* Print-specific utility classes */
+.print-only {
+  display: none;
+}
+
+@media print {
+  .print-only {
+    display: block !important;
+  }
+}

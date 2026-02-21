@@ -26,6 +26,9 @@ class User extends Authenticatable
         'role',
         'phone',
         'address',
+        'email_notifications',
+        'sms_notifications',
+        'system_notifications',
     ];
 
     /**
@@ -48,18 +51,62 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the student record associated with the user.
+     * Get the activities for the user.
      */
-    public function student(): HasOne
+    public function activities(): HasMany
     {
-        return $this->hasOne(Student::class, 'user_id');
+        return $this->hasMany(Activity::class);
     }
 
     /**
-     * Get the faculty record associated with the user.
+     * Check if user has a specific role
+     *
+     * @param string $role
+     * @return bool
      */
-    public function faculty(): HasOne
+    public function hasRole(string $role): bool
     {
-        return $this->hasOne(Faculty::class, 'user_id');
+        return $this->role === $role;
+    }
+
+    /**
+     * Check if user has any of the specified roles
+     *
+     * @param array $roles
+     * @return bool
+     */
+    public function hasAnyRole(array $roles): bool
+    {
+        return in_array($this->role, $roles);
+    }
+
+    /**
+     * Check if user is an admin
+     *
+     * @return bool
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Check if user is staff
+     *
+     * @return bool
+     */
+    public function isStaff(): bool
+    {
+        return $this->role === 'staff';
+    }
+
+    /**
+     * Check if user is read-only
+     *
+     * @return bool
+     */
+    public function isReadOnly(): bool
+    {
+        return $this->role === 'readonly';
     }
 }
