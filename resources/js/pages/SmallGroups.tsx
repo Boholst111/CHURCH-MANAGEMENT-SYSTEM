@@ -6,7 +6,7 @@ import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { smallGroupApi, type SmallGroup } from '../lib/smallGroupApi';
 import SmallGroupForm, { SmallGroupFormData } from '../components/smallgroups/SmallGroupForm';
-import DeleteSmallGroupDialog from '../components/smallgroups/DeleteSmallGroupDialog';
+import ArchiveButton from '../components/archive/ArchiveButton';
 
 /**
  * SmallGroups Page Component
@@ -31,11 +31,6 @@ const SmallGroups: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<SmallGroup | null>(null);
-  
-  // Delete dialog state
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [deletingGroup, setDeletingGroup] = useState<SmallGroup | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   /**
    * Load small groups on mount
@@ -110,41 +105,14 @@ const SmallGroups: React.FC = () => {
    * Handle delete small group button click
    */
   const handleDeleteClick = (group: SmallGroup) => {
-    setDeletingGroup(group);
-    setIsDeleteDialogOpen(true);
+    // Handled by ArchiveButton component
   };
 
   /**
-   * Handle delete confirmation
+   * Handle archive success callback
    */
-  const handleConfirmDelete = async () => {
-    if (!deletingGroup) return;
-
-    setIsDeleting(true);
-    try {
-      await smallGroupApi.deleteSmallGroup(deletingGroup.id);
-      showToast('success', 'Small group deleted successfully');
-      
-      // Refresh small groups list
-      await loadSmallGroups();
-      setIsDeleteDialogOpen(false);
-      setDeletingGroup(null);
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to delete small group';
-      showToast('error', errorMessage);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  /**
-   * Handle close delete dialog
-   */
-  const handleCloseDeleteDialog = () => {
-    if (!isDeleting) {
-      setIsDeleteDialogOpen(false);
-      setDeletingGroup(null);
-    }
+  const handleArchiveSuccess = async () => {
+    await loadSmallGroups();
   };
 
   /**
@@ -241,14 +209,15 @@ const SmallGroups: React.FC = () => {
                   >
                     Edit
                   </Button>
-                  <Button
+                  <ArchiveButton
+                    itemType="small-groups"
+                    itemId={group.id}
+                    itemName={group.name}
+                    onArchiveSuccess={handleArchiveSuccess}
                     variant="outline"
                     size="sm"
-                    className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => handleDeleteClick(group)}
-                  >
-                    Delete
-                  </Button>
+                    className="flex-1"
+                  />
                 </div>
               )}
             </Card>
@@ -262,15 +231,6 @@ const SmallGroups: React.FC = () => {
         onClose={handleFormClose}
         onSubmit={handleFormSubmit}
         smallGroup={selectedGroup}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteSmallGroupDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={handleCloseDeleteDialog}
-        onConfirm={handleConfirmDelete}
-        smallGroup={deletingGroup}
-        isDeleting={isDeleting}
       />
     </div>
   );

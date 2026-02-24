@@ -36,11 +36,11 @@
 
         <div class="summary-box">
             <h3>Financial Summary</h3>
-            <p><span class="info-label">Total Giving:</span> ${{ number_format($financial['summary']['total_giving'], 2) }}</p>
+            <p><span class="info-label">Total Giving:</span> ₱{{ number_format($financial['summary']['total_giving'], 2) }}</p>
             <p><span class="info-label">Total Transactions:</span> {{ $financial['summary']['total_transactions'] }}</p>
-            <p><span class="info-label">Average Transaction:</span> ${{ number_format($financial['summary']['average_transaction'], 2) }}</p>
+            <p><span class="info-label">Average Transaction:</span> ₱{{ number_format($financial['summary']['average_transaction'], 2) }}</p>
             <p><span class="info-label">Unique Givers:</span> {{ $financial['summary']['unique_givers'] }}</p>
-            <p><span class="info-label">Average Per Member:</span> ${{ number_format($financial['average_per_member'], 2) }}</p>
+            <p><span class="info-label">Average Per Member:</span> ₱{{ number_format($financial['average_per_member'], 2) }}</p>
         </div>
 
         <h3>Giving by Payment Method</h3>
@@ -57,7 +57,7 @@
                 <tr>
                     <td>{{ ucfirst($method) }}</td>
                     <td>{{ $data['count'] }}</td>
-                    <td>${{ number_format($data['total'], 2) }}</td>
+                    <td>₱{{ number_format($data['total'], 2) }}</td>
                 </tr>
                 @endforeach
             </tbody>

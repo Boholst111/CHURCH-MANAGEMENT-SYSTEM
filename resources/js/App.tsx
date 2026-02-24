@@ -21,6 +21,7 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Profile = lazy(() => import('./pages/Profile'));
 const ActivityLog = lazy(() => import('./pages/ActivityLog'));
 const Users = lazy(() => import('./pages/Users'));
+const ArchiveManagement = lazy(() => import('./pages/ArchiveManagement'));
 
 const AppRoutes: React.FC = () => {
   const { user } = useAuth();
@@ -100,6 +101,13 @@ const AppRoutes: React.FC = () => {
           <ProtectedRoute requiredRole="admin">
             <Layout>
               <Users />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/archive-management" element={
+          <ProtectedRoute requiredRole="admin">
+            <Layout>
+              <ArchiveManagement />
             </Layout>
           </ProtectedRoute>
         } />

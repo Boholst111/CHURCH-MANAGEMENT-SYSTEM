@@ -189,6 +189,7 @@ const Leadership: React.FC = () => {
               leadership={leader}
               onEdit={isAdmin ? handleEdit : undefined}
               onDelete={isAdmin ? handleDeleteClick : undefined}
+              onArchiveSuccess={loadLeadership}
             />
           ))}
         </div>

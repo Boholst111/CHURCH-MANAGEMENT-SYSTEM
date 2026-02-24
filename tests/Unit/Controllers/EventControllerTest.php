@@ -297,7 +297,8 @@ class EventControllerTest extends TestCase
         
         $this->assertTrue($data['success']);
         $this->assertEquals('Event deleted successfully', $data['message']);
-        $this->assertDatabaseMissing('events', ['id' => $event->id]);
+        // Check that event is soft deleted (has deleted_at timestamp)
+        $this->assertSoftDeleted('events', ['id' => $event->id]);
     }
 
     /** @test */

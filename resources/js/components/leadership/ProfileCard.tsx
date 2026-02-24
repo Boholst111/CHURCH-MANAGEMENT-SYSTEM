@@ -1,7 +1,8 @@
 import React from 'react';
-import { Edit, Trash2, User } from 'lucide-react';
+import { Edit, User } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
+import ArchiveButton from '../archive/ArchiveButton';
 
 interface Leadership {
   id: number;
@@ -20,12 +21,14 @@ interface ProfileCardProps {
   leadership: Leadership;
   onEdit?: (leadership: Leadership) => void;
   onDelete?: (leadership: Leadership) => void;
+  onArchiveSuccess?: () => void;
 }
 
 const ProfileCard: React.FC<ProfileCardProps> = ({
   leadership,
   onEdit,
   onDelete,
+  onArchiveSuccess,
 }) => {
   const fullName = `${leadership.first_name} ${leadership.last_name}`;
   const isAdmin = onEdit !== undefined || onDelete !== undefined;
@@ -79,15 +82,15 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
                 <Edit className="h-4 w-4 mr-1" />
                 Edit
               </Button>
-              <Button
-                variant="destructive"
+              <ArchiveButton
+                itemType="leadership"
+                itemId={leadership.id}
+                itemName={fullName}
+                onArchiveSuccess={onArchiveSuccess}
+                variant="outline"
                 size="sm"
                 className="flex-1"
-                onClick={() => onDelete?.(leadership)}
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                Delete
-              </Button>
+              />
             </div>
           )}
         </div>

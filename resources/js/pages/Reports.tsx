@@ -162,18 +162,18 @@ const Reports: React.FC = () => {
                 <div className="text-center">
                   <p className="text-sm text-gray-600">Total Giving</p>
                   <p className="text-xl font-semibold text-gray-900">
-                    {new Intl.NumberFormat('en-US', {
+                    {new Intl.NumberFormat('en-PH', {
                       style: 'currency',
-                      currency: 'USD',
+                      currency: 'PHP',
                     }).format(financialSummary.total_giving)}
                   </p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-gray-600">Average Giving</p>
                   <p className="text-xl font-semibold text-gray-900">
-                    {new Intl.NumberFormat('en-US', {
+                    {new Intl.NumberFormat('en-PH', {
                       style: 'currency',
-                      currency: 'USD',
+                      currency: 'PHP',
                     }).format(financialSummary.average_giving)}
                   </p>
                 </div>

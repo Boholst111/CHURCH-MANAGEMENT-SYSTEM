@@ -29,11 +29,11 @@
 
     <div class="summary-box">
         <h2>Financial Summary</h2>
-        <p><span class="info-label">Total Giving:</span> ${{ number_format($report['summary']['total_giving'], 2) }}</p>
+        <p><span class="info-label">Total Giving:</span> ₱{{ number_format($report['summary']['total_giving'], 2) }}</p>
         <p><span class="info-label">Total Transactions:</span> {{ $report['summary']['total_transactions'] }}</p>
-        <p><span class="info-label">Average Transaction:</span> ${{ number_format($report['summary']['average_transaction'], 2) }}</p>
+        <p><span class="info-label">Average Transaction:</span> ₱{{ number_format($report['summary']['average_transaction'], 2) }}</p>
         <p><span class="info-label">Unique Givers:</span> {{ $report['summary']['unique_givers'] }}</p>
-        <p><span class="info-label">Average Per Member:</span> ${{ number_format($report['average_per_member'], 2) }}</p>
+        <p><span class="info-label">Average Per Member:</span> ₱{{ number_format($report['average_per_member'], 2) }}</p>
     </div>
 
     <h2>Giving by Payment Method</h2>
@@ -50,7 +50,7 @@
             <tr>
                 <td>{{ ucfirst($method) }}</td>
                 <td>{{ $data['count'] }}</td>
-                <td>${{ number_format($data['total'], 2) }}</td>
+                <td>₱{{ number_format($data['total'], 2) }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -68,7 +68,7 @@
             @foreach($report['monthly_totals'] as $month)
             <tr>
                 <td>{{ $month->year }}-{{ str_pad($month->month, 2, '0', STR_PAD_LEFT) }}</td>
-                <td>${{ number_format($month->total, 2) }}</td>
+                <td>₱{{ number_format($month->total, 2) }}</td>
             </tr>
             @endforeach
         </tbody>

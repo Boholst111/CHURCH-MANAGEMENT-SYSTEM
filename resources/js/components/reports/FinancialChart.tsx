@@ -45,9 +45,9 @@ export const FinancialChart: React.FC<FinancialChartProps> = React.memo(({
 
   // Format currency for tooltip
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-PH', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'PHP',
     }).format(value);
   };
 

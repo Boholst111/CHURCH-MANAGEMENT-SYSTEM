@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { Building2, Bell, User } from 'lucide-react';
+import { Building2, Bell, User, Archive } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/card';
+import { Button } from '../components/ui/button';
 import ChurchDetailsForm from '../components/settings/ChurchDetailsForm';
 import NotificationToggles from '../components/settings/NotificationToggles';
 import ProfileForm from '../components/settings/ProfileForm';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * Settings Page Component
@@ -15,11 +18,16 @@ import ProfileForm from '../components/settings/ProfileForm';
  * - Church Details: Configure church name, address, contact info, and service times
  * - Notifications: Toggle email notifications, SMS alerts, and system announcements
  * - Profile: Edit user profile including name, email, and password
+ * - Archive Management: Link to archive management page (admin only)
  * 
  * Validates Requirements: 6.1, 6.2, 6.3
  */
 const Settings: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'church' | 'notifications' | 'profile'>('church');
+
+  const isAdmin = user?.role === 'admin';
 
   const tabs = [
     { 
@@ -51,6 +59,32 @@ const Settings: React.FC = () => {
           Manage church settings, notification preferences, and your profile.
         </p>
       </div>
+
+      {/* Archive Management Link (Admin Only) */}
+      {isAdmin && (
+        <Card className="p-4 bg-orange-50 border-orange-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                <Archive className="h-5 w-5 text-orange-600" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-sm font-semibold text-gray-900">Archive Management</h3>
+                <p className="text-sm text-gray-600">View and manage archived items</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/archive-management')}
+              className="border-orange-300 hover:bg-orange-100"
+            >
+              <Archive className="h-4 w-4 mr-2" />
+              Open Archive
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">

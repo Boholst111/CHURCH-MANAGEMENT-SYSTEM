@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import api from '../lib/api';
 import { Card } from '../components/ui/card';
+import Offerings from './Finance/Offerings';
+import Expenses from './Finance/Expenses';
+import Budgets from './Finance/Budgets';
+import Reports from './Finance/Reports';
+import Settings from './Finance/Settings';
 
 interface FinancialSummary {
   total_giving: number;
@@ -68,7 +73,7 @@ const Finance: React.FC = () => {
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
         <nav className="-mb-px flex space-x-8">
-          {['overview', 'offerings', 'expenses', 'budgets', 'reports'].map((tab) => (
+          {['overview', 'offerings', 'expenses', 'budgets', 'reports', 'settings'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -136,44 +141,20 @@ const Finance: React.FC = () => {
         </div>
       )}
 
-      {/* Other Tabs - Placeholder */}
-      {activeTab !== 'overview' && (
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4 capitalize">{activeTab}</h2>
-          <div className="space-y-4">
-            <p className="text-gray-600">
-              {activeTab === 'offerings' && 'Detailed offerings management interface. Track tithes, special offerings, missions, building fund, and other contributions.'}
-              {activeTab === 'expenses' && 'Comprehensive expense tracking system. Record and categorize all church expenses including utilities, salaries, maintenance, and missions.'}
-              {activeTab === 'budgets' && 'Budget planning and monitoring tools. Create budgets for different categories and track spending against allocations.'}
-              {activeTab === 'reports' && 'Financial reporting and analytics. Generate detailed financial statements, donor reports, and tax documents.'}
-            </p>
-            
-            {activeTab === 'offerings' && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">Available Features:</h3>
-                <ul className="list-disc list-inside text-blue-800 space-y-1">
-                  <li>Record tithes and offerings</li>
-                  <li>Track different offering types</li>
-                  <li>Filter by date, member, and payment method</li>
-                  <li>View giving history</li>
-                </ul>
-              </div>
-            )}
-            
-            {activeTab === 'expenses' && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <h3 className="font-semibold text-amber-900 mb-2">Coming Soon:</h3>
-                <ul className="list-disc list-inside text-amber-800 space-y-1">
-                  <li>Expense recording and categorization</li>
-                  <li>Vendor management</li>
-                  <li>Receipt attachment</li>
-                  <li>Expense approval workflow</li>
-                </ul>
-              </div>
-            )}
-          </div>
-        </Card>
-      )}
+      {/* Offerings Tab */}
+      {activeTab === 'offerings' && <Offerings />}
+
+      {/* Expenses Tab */}
+      {activeTab === 'expenses' && <Expenses />}
+
+      {/* Budgets Tab */}
+      {activeTab === 'budgets' && <Budgets />}
+
+      {/* Reports Tab */}
+      {activeTab === 'reports' && <Reports />}
+
+      {/* Settings Tab */}
+      {activeTab === 'settings' && <Settings />}
     </div>
   );
 };

@@ -4,6 +4,9 @@ export interface DashboardStats {
   monthly_tithes: number;
   upcoming_events: number;
   new_visitors: number;
+  total_offerings: number;
+  total_expenses: number;
+  net_income: number;
 }
 
 export interface AttendanceData {

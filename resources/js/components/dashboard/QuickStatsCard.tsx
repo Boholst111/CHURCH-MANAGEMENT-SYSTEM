@@ -23,9 +23,9 @@ export const QuickStatsCard: React.FC<QuickStatsCardProps> = React.memo(({
 }) => {
   // Format currency values
   const formattedValue = isCurrency && typeof value === 'number'
-    ? new Intl.NumberFormat('en-US', {
+    ? new Intl.NumberFormat('en-PH', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'PHP',
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(value)

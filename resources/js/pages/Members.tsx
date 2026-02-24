@@ -343,6 +343,7 @@ const Members: React.FC = () => {
           members={members}
           onEdit={canModify ? handleEditMember : undefined}
           onDelete={canModify ? handleDeleteMember : undefined}
+          onArchiveSuccess={fetchMembers}
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={handlePageChange}

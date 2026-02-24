@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, MapPin, Clock, Users, Edit, Trash2, CheckCircle } from 'lucide-react';
+import { Plus, Calendar, MapPin, Clock, Users, Edit, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { eventApi, type Event } from '../lib/eventApi';
 import EventForm, { EventFormData } from '../components/events/EventForm';
-import DeleteEventDialog from '../components/events/DeleteEventDialog';
 import CompleteEventDialog from '../components/events/CompleteEventDialog';
+import ArchiveButton from '../components/archive/ArchiveButton';
 
 /**
  * Events Page Component
@@ -33,8 +33,6 @@ const Events: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
   const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
   const [eventToComplete, setEventToComplete] = useState<Event | null>(null);
 
@@ -119,26 +117,14 @@ const Events: React.FC = () => {
    * Handle delete event button click
    */
   const handleDeleteClick = (event: Event) => {
-    setEventToDelete(event);
-    setIsDeleteDialogOpen(true);
+    // Handled by ArchiveButton component
   };
 
   /**
-   * Handle delete confirmation
+   * Handle archive success callback
    */
-  const handleDeleteConfirm = async () => {
-    if (!eventToDelete) return;
-
-    try {
-      await eventApi.deleteEvent(eventToDelete.id);
-      showToast('success', 'Event deleted successfully');
-      await loadEvents();
-      setIsDeleteDialogOpen(false);
-      setEventToDelete(null);
-    } catch (error: any) {
-      showToast('error', 'Failed to delete event');
-      console.error('Error deleting event:', error);
-    }
+  const handleArchiveSuccess = async () => {
+    await loadEvents();
   };
 
   /**
@@ -292,15 +278,15 @@ const Events: React.FC = () => {
             <Edit className="h-4 w-4 mr-1" />
             Edit
           </Button>
-          <Button
+          <ArchiveButton
+            itemType="events"
+            itemId={event.id}
+            itemName={event.title}
+            onArchiveSuccess={handleArchiveSuccess}
             variant="outline"
             size="sm"
-            onClick={() => handleDeleteClick(event)}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Delete
-          </Button>
+            iconOnly={false}
+          />
         </div>
       )}
     </Card>
@@ -315,17 +301,6 @@ const Events: React.FC = () => {
         onSubmit={handleFormSubmit}
         event={selectedEvent}
         isLoading={isLoading}
-      />
-
-      {/* Delete Event Dialog */}
-      <DeleteEventDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={() => {
-          setIsDeleteDialogOpen(false);
-          setEventToDelete(null);
-        }}
-        onConfirm={handleDeleteConfirm}
-        eventTitle={eventToDelete?.title || ''}
       />
 
       {/* Complete Event Dialog */}

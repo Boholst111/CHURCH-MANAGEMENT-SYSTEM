@@ -274,7 +274,8 @@ class MemberControllerTest extends TestCase
         
         $this->assertTrue($data['success']);
         $this->assertEquals('Member deleted successfully', $data['message']);
-        $this->assertDatabaseMissing('members', ['id' => $member->id]);
+        // Check that member is soft deleted (has deleted_at timestamp)
+        $this->assertSoftDeleted('members', ['id' => $member->id]);
     }
 
     /** @test */

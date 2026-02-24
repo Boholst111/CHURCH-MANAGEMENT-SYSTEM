@@ -336,7 +336,8 @@ class SmallGroupApiTest extends TestCase
                 'success' => true,
                 'message' => 'Small group deleted successfully',
             ]);
-        $this->assertDatabaseMissing('small_groups', ['id' => $group->id]);
+        // Check that small group is soft deleted (has deleted_at timestamp)
+        $this->assertSoftDeleted('small_groups', ['id' => $group->id]);
     }
 
     /** @test */

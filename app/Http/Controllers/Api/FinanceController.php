@@ -117,7 +117,23 @@ class FinanceController extends Controller
             $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
             $endDate = $request->input('end_date', now()->endOfMonth()->toDateString());
             
-            $summary = $this->financeService->getFinancialSummary($startDate, $endDate);
+            // Get offerings data
+            $offerings = \DB::table('offerings')
+                ->whereBetween('date', [$startDate, $endDate])
+                ->get();
+
+            $summary = [
+                'total_giving' => $offerings->sum('amount'),
+                'total_transactions' => $offerings->count(),
+                'average_transaction' => $offerings->avg('amount') ?? 0,
+                'unique_givers' => $offerings->whereNotNull('member_id')->unique('member_id')->count(),
+                'by_payment_method' => $offerings->groupBy('payment_method')->map(function ($group) {
+                    return [
+                        'count' => $group->count(),
+                        'total' => $group->sum('amount'),
+                    ];
+                })->toArray(),
+            ];
             
             return response()->json([
                 'success' => true,

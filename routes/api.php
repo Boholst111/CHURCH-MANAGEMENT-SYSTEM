@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\ArchiveController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\MemberController;
@@ -122,6 +123,56 @@ Route::middleware(['auth:sanctum', 'log.activity'])->group(function () {
     Route::post('/finance/tithes', [\App\Http\Controllers\Api\FinanceController::class, 'store'])->middleware('role:admin,staff');
     Route::get('/finance/summary', [\App\Http\Controllers\Api\FinanceController::class, 'getSummary']);
     
+    // Offerings Routes
+    Route::get('/offerings', [\App\Http\Controllers\Api\OfferingController::class, 'index']);
+    Route::post('/offerings', [\App\Http\Controllers\Api\OfferingController::class, 'store'])->middleware('role:admin,staff');
+    Route::get('/offerings/{id}', [\App\Http\Controllers\Api\OfferingController::class, 'show']);
+    Route::put('/offerings/{id}', [\App\Http\Controllers\Api\OfferingController::class, 'update'])->middleware('role:admin,staff');
+    Route::delete('/offerings/{id}', [\App\Http\Controllers\Api\OfferingController::class, 'destroy'])->middleware('role:admin,staff');
+    
+    // Expenses Routes
+    Route::get('/expenses', [\App\Http\Controllers\Api\ExpenseController::class, 'index']);
+    Route::post('/expenses', [\App\Http\Controllers\Api\ExpenseController::class, 'store'])->middleware('role:admin,staff');
+    Route::get('/expenses/{id}', [\App\Http\Controllers\Api\ExpenseController::class, 'show']);
+    Route::put('/expenses/{id}', [\App\Http\Controllers\Api\ExpenseController::class, 'update'])->middleware('role:admin,staff');
+    Route::delete('/expenses/{id}', [\App\Http\Controllers\Api\ExpenseController::class, 'destroy'])->middleware('role:admin,staff');
+    
+    // Budgets Routes
+    Route::get('/budgets', [\App\Http\Controllers\Api\BudgetController::class, 'index']);
+    Route::post('/budgets', [\App\Http\Controllers\Api\BudgetController::class, 'store'])->middleware('role:admin,staff');
+    Route::get('/budgets/{id}', [\App\Http\Controllers\Api\BudgetController::class, 'show']);
+    Route::get('/budgets/{id}/items', [\App\Http\Controllers\Api\BudgetController::class, 'items']);
+    Route::put('/budgets/{id}', [\App\Http\Controllers\Api\BudgetController::class, 'update'])->middleware('role:admin,staff');
+    Route::delete('/budgets/{id}', [\App\Http\Controllers\Api\BudgetController::class, 'destroy'])->middleware('role:admin,staff');
+    
+    // Offering Types Routes
+    Route::get('/offering-types', [\App\Http\Controllers\Api\OfferingTypeController::class, 'index']);
+    Route::post('/offering-types', [\App\Http\Controllers\Api\OfferingTypeController::class, 'store'])->middleware('role:admin,staff');
+    Route::get('/offering-types/{id}', [\App\Http\Controllers\Api\OfferingTypeController::class, 'show']);
+    Route::put('/offering-types/{id}', [\App\Http\Controllers\Api\OfferingTypeController::class, 'update'])->middleware('role:admin,staff');
+    Route::delete('/offering-types/{id}', [\App\Http\Controllers\Api\OfferingTypeController::class, 'destroy'])->middleware('role:admin,staff');
+    
+    // Expense Categories Routes
+    Route::get('/expense-categories', [\App\Http\Controllers\Api\ExpenseCategoryController::class, 'index']);
+    Route::post('/expense-categories', [\App\Http\Controllers\Api\ExpenseCategoryController::class, 'store'])->middleware('role:admin,staff');
+    Route::get('/expense-categories/{id}', [\App\Http\Controllers\Api\ExpenseCategoryController::class, 'show']);
+    Route::put('/expense-categories/{id}', [\App\Http\Controllers\Api\ExpenseCategoryController::class, 'update'])->middleware('role:admin,staff');
+    Route::delete('/expense-categories/{id}', [\App\Http\Controllers\Api\ExpenseCategoryController::class, 'destroy'])->middleware('role:admin,staff');
+    
+    // Vendors Routes
+    Route::get('/vendors', [\App\Http\Controllers\Api\VendorController::class, 'index']);
+    Route::post('/vendors', [\App\Http\Controllers\Api\VendorController::class, 'store'])->middleware('role:admin,staff');
+    Route::get('/vendors/{id}', [\App\Http\Controllers\Api\VendorController::class, 'show']);
+    Route::put('/vendors/{id}', [\App\Http\Controllers\Api\VendorController::class, 'update'])->middleware('role:admin,staff');
+    Route::delete('/vendors/{id}', [\App\Http\Controllers\Api\VendorController::class, 'destroy'])->middleware('role:admin,staff');
+    
+    // Funds Routes
+    Route::get('/funds', [\App\Http\Controllers\Api\FundController::class, 'index']);
+    Route::post('/funds', [\App\Http\Controllers\Api\FundController::class, 'store'])->middleware('role:admin,staff');
+    Route::get('/funds/{id}', [\App\Http\Controllers\Api\FundController::class, 'show']);
+    Route::put('/funds/{id}', [\App\Http\Controllers\Api\FundController::class, 'update'])->middleware('role:admin,staff');
+    Route::delete('/funds/{id}', [\App\Http\Controllers\Api\FundController::class, 'destroy'])->middleware('role:admin,staff');
+    
     // Event Routes
     Route::get('/events', [\App\Http\Controllers\Api\EventController::class, 'index']);
     Route::post('/events', [\App\Http\Controllers\Api\EventController::class, 'store'])->middleware('role:admin,staff');
@@ -134,6 +185,8 @@ Route::middleware(['auth:sanctum', 'log.activity'])->group(function () {
     Route::get('/reports/financial', [\App\Http\Controllers\Api\ReportController::class, 'getFinancialReport']);
     Route::get('/reports/demographics', [\App\Http\Controllers\Api\ReportController::class, 'getDemographicReport']);
     Route::post('/reports/export-pdf', [\App\Http\Controllers\Api\ReportController::class, 'exportPdf']);
+    Route::get('/reports/quick-statistics', [\App\Http\Controllers\Api\ReportController::class, 'getQuickStatistics']);
+    Route::get('/reports/{reportType}', [\App\Http\Controllers\Api\ReportController::class, 'generateReport']);
     
     // Settings Routes
     Route::get('/settings/church', [SettingsController::class, 'getChurchSettings']);
@@ -151,4 +204,10 @@ Route::middleware(['auth:sanctum', 'log.activity'])->group(function () {
     // Activity Log Routes (admin only)
     Route::get('/activities', [\App\Http\Controllers\Api\ActivityController::class, 'index'])->middleware('role:admin');
     Route::get('/activities/users', [\App\Http\Controllers\Api\ActivityController::class, 'getUsers'])->middleware('role:admin');
+    
+    // Archive Management Routes (admin only)
+    Route::get('/archives', [ArchiveController::class, 'index'])->middleware('role:admin');
+    Route::get('/archives/{type}', [ArchiveController::class, 'indexByType'])->middleware('role:admin');
+    Route::post('/archives/{type}/{id}/restore', [ArchiveController::class, 'restore'])->middleware('role:admin');
+    Route::delete('/archives/{type}/{id}/force', [ArchiveController::class, 'forceDelete'])->middleware('role:admin');
 });

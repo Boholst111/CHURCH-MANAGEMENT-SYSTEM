@@ -84,6 +84,220 @@ class ReportService
     }
 
     /**
+     * Generate Financial Summary PDF.
+     *
+     * @param string $startDate
+     * @param string $endDate
+     * @return \Illuminate\Http\Response
+     */
+    public function generateFinancialSummaryPDF(string $startDate, string $endDate)
+    {
+        $data = [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'offerings' => DB::table('offerings')
+                ->whereBetween('date', [$startDate, $endDate])
+                ->sum('amount'),
+            'expenses' => DB::table('expenses')
+                ->where('approval_status', 'approved')
+                ->whereBetween('date', [$startDate, $endDate])
+                ->sum('amount'),
+            'generated_at' => now()->format('Y-m-d H:i:s'),
+        ];
+        
+        $data['net_position'] = $data['offerings'] - $data['expenses'];
+        
+        $pdf = Pdf::loadView('reports.financial-summary', $data);
+        return $pdf->download('financial-summary-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Generate Income Statement PDF.
+     *
+     * @param string $startDate
+     * @param string $endDate
+     * @return \Illuminate\Http\Response
+     */
+    public function generateIncomeStatementPDF(string $startDate, string $endDate)
+    {
+        $offerings = DB::table('offerings')
+            ->join('offering_types', 'offerings.offering_type_id', '=', 'offering_types.id')
+            ->select('offering_types.name as type', DB::raw('SUM(offerings.amount) as total'))
+            ->whereBetween('offerings.date', [$startDate, $endDate])
+            ->groupBy('offering_types.name')
+            ->get();
+        
+        $data = [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'offerings' => $offerings,
+            'total' => $offerings->sum('total'),
+            'generated_at' => now()->format('Y-m-d H:i:s'),
+        ];
+        
+        $pdf = Pdf::loadView('reports.income-statement', $data);
+        return $pdf->download('income-statement-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Generate Expense Report PDF.
+     *
+     * @param string $startDate
+     * @param string $endDate
+     * @return \Illuminate\Http\Response
+     */
+    public function generateExpenseReportPDF(string $startDate, string $endDate)
+    {
+        $expenses = DB::table('expenses')
+            ->join('expense_categories', 'expenses.expense_category_id', '=', 'expense_categories.id')
+            ->leftJoin('vendors', 'expenses.vendor_id', '=', 'vendors.id')
+            ->select(
+                'expense_categories.name as category',
+                'vendors.name as vendor',
+                'expenses.description',
+                'expenses.amount',
+                'expenses.date',
+                'expenses.approval_status'
+            )
+            ->whereBetween('expenses.date', [$startDate, $endDate])
+            ->orderBy('expenses.date', 'desc')
+            ->get();
+        
+        $data = [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'expenses' => $expenses,
+            'total' => $expenses->where('approval_status', 'approved')->sum('amount'),
+            'generated_at' => now()->format('Y-m-d H:i:s'),
+        ];
+        
+        $pdf = Pdf::loadView('reports.expense-report', $data);
+        return $pdf->download('expense-report-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Generate Budget Variance PDF.
+     *
+     * @param string $startDate
+     * @param string $endDate
+     * @return \Illuminate\Http\Response
+     */
+    public function generateBudgetVariancePDF(string $startDate, string $endDate)
+    {
+        $budgets = DB::table('budgets')
+            ->where('is_active', true)
+            ->where(function($query) use ($startDate, $endDate) {
+                $query->whereBetween('start_date', [$startDate, $endDate])
+                      ->orWhereBetween('end_date', [$startDate, $endDate])
+                      ->orWhere(function($q) use ($startDate, $endDate) {
+                          $q->where('start_date', '<=', $startDate)
+                            ->where('end_date', '>=', $endDate);
+                      });
+            })
+            ->get();
+        
+        $budgetData = [];
+        foreach ($budgets as $budget) {
+            $items = DB::table('budget_items')
+                ->join('expense_categories', 'budget_items.category_id', '=', 'expense_categories.id')
+                ->where('budget_items.budget_id', $budget->id)
+                ->where('budget_items.category_type', 'expense')
+                ->select(
+                    'expense_categories.name as category',
+                    'budget_items.budgeted_amount'
+                )
+                ->get()
+                ->map(function($item) use ($budget) {
+                    // Calculate actual amount from expenses
+                    $actualAmount = DB::table('expenses')
+                        ->join('expense_categories', 'expenses.expense_category_id', '=', 'expense_categories.id')
+                        ->where('expense_categories.name', $item->category)
+                        ->where('expenses.approval_status', 'approved')
+                        ->whereBetween('expenses.date', [$budget->start_date, $budget->end_date])
+                        ->sum('expenses.amount');
+                    
+                    $item->actual_amount = $actualAmount;
+                    return $item;
+                });
+            
+            $budgetData[] = [
+                'budget' => $budget,
+                'items' => $items,
+            ];
+        }
+        
+        $data = [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'budgets' => $budgetData,
+            'generated_at' => now()->format('Y-m-d H:i:s'),
+        ];
+        
+        $pdf = Pdf::loadView('reports.budget-variance', $data);
+        return $pdf->download('budget-variance-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Generate Donor Giving PDF.
+     *
+     * @param string $startDate
+     * @param string $endDate
+     * @return \Illuminate\Http\Response
+     */
+    public function generateDonorGivingPDF(string $startDate, string $endDate)
+    {
+        $donations = DB::table('offerings')
+            ->leftJoin('members', 'offerings.member_id', '=', 'members.id')
+            ->join('offering_types', 'offerings.offering_type_id', '=', 'offering_types.id')
+            ->select(
+                DB::raw('CONCAT(members.first_name, " ", members.last_name) as donor_name'),
+                'offerings.is_anonymous',
+                'offering_types.name as type',
+                'offerings.amount',
+                'offerings.date'
+            )
+            ->whereBetween('offerings.date', [$startDate, $endDate])
+            ->orderBy('offerings.date', 'desc')
+            ->get();
+        
+        $data = [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'donations' => $donations,
+            'total' => $donations->sum('amount'),
+            'generated_at' => now()->format('Y-m-d H:i:s'),
+        ];
+        
+        $pdf = Pdf::loadView('reports.donor-giving', $data);
+        return $pdf->download('donor-giving-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Generate Fund Balance PDF.
+     *
+     * @param string $startDate
+     * @param string $endDate
+     * @return \Illuminate\Http\Response
+     */
+    public function generateFundBalancePDF(string $startDate, string $endDate)
+    {
+        $funds = DB::table('funds')
+            ->select('name', 'fund_type', 'current_balance', 'description')
+            ->get();
+        
+        $data = [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'funds' => $funds,
+            'total_balance' => $funds->sum('current_balance'),
+            'generated_at' => now()->format('Y-m-d H:i:s'),
+        ];
+        
+        $pdf = Pdf::loadView('reports.fund-balance', $data);
+        return $pdf->download('fund-balance-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
      * Generate PDF report for demographic data.
      *
      * @return \Illuminate\Http\Response

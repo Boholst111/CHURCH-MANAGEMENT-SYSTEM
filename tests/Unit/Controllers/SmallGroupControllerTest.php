@@ -224,7 +224,8 @@ class SmallGroupControllerTest extends TestCase
         $data = $response->getData(true);
         $this->assertTrue($data['success']);
         $this->assertEquals('Small group deleted successfully', $data['message']);
-        $this->assertDatabaseMissing('small_groups', ['id' => $group->id]);
+        // Check that small group is soft deleted (has deleted_at timestamp)
+        $this->assertSoftDeleted('small_groups', ['id' => $group->id]);
     }
 
     /** @test */

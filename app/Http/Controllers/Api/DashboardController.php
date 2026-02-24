@@ -49,6 +49,20 @@ class DashboardController extends Controller
             // New Visitors (visitors who joined this month)
             $newVisitors = $this->memberService->getNewVisitorsThisMonth()->count();
 
+            // Finance summaries
+            $totalOfferings = DB::table('offerings')
+                ->whereMonth('date', now()->month)
+                ->whereYear('date', now()->year)
+                ->sum('amount');
+
+            $totalExpenses = DB::table('expenses')
+                ->where('approval_status', 'approved')
+                ->whereMonth('date', now()->month)
+                ->whereYear('date', now()->year)
+                ->sum('amount');
+
+            $netIncome = $totalOfferings - $totalExpenses;
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -56,6 +70,9 @@ class DashboardController extends Controller
                     'monthly_tithes' => $monthlyTithes,
                     'upcoming_events' => $upcomingEvents,
                     'new_visitors' => $newVisitors,
+                    'total_offerings' => $totalOfferings,
+                    'total_expenses' => $totalExpenses,
+                    'net_income' => $netIncome,
                 ],
             ]);
         } catch (\Exception $e) {

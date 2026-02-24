@@ -356,7 +356,8 @@ class MemberApiTest extends TestCase
                 'success' => true,
                 'message' => 'Member deleted successfully',
             ]);
-        $this->assertDatabaseMissing('members', ['id' => $member->id]);
+        // Check that member is soft deleted (has deleted_at timestamp)
+        $this->assertSoftDeleted('members', ['id' => $member->id]);
     }
 
     /** @test */

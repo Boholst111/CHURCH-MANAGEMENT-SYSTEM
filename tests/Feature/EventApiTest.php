@@ -388,7 +388,8 @@ class EventApiTest extends TestCase
                 'success' => true,
                 'message' => 'Event deleted successfully',
             ]);
-        $this->assertDatabaseMissing('events', ['id' => $event->id]);
+        // Check that event is soft deleted (has deleted_at timestamp)
+        $this->assertSoftDeleted('events', ['id' => $event->id]);
     }
 
     /** @test */

@@ -9,9 +9,9 @@ const Dashboard: React.FC = () => {
 
   // Format currency
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-PH', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'PHP',
     }).format(amount);
   };
 
@@ -66,61 +66,115 @@ const Dashboard: React.FC = () => {
         </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.total_members ?? 0}</div>
-            <p className="text-xs text-muted-foreground">
-              Active church members
-            </p>
-          </CardContent>
-        </Card>
+      {/* Church Management Stats */}
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Church Management</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Members</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats?.total_members ?? 0}</div>
+              <p className="text-xs text-muted-foreground">
+                Active church members
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Tithes</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats ? formatCurrency(stats.monthly_tithes) : '$0.00'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              This month's contributions
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Monthly Tithes</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {stats ? formatCurrency(stats.monthly_tithes) : '$0.00'}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                This month's contributions
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.upcoming_events ?? 0}</div>
-            <p className="text-xs text-muted-foreground">
-              Scheduled events
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats?.upcoming_events ?? 0}</div>
+              <p className="text-xs text-muted-foreground">
+                Scheduled events
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Visitors</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.new_visitors ?? 0}</div>
-            <p className="text-xs text-muted-foreground">
-              This month
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">New Visitors</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats?.new_visitors ?? 0}</div>
+              <p className="text-xs text-muted-foreground">
+                This month
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Finance Summary Stats */}
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Finance Summary</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Offerings</CardTitle>
+              <DollarSign className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {stats ? formatCurrency(stats.total_offerings) : '$0.00'}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                This month's offerings
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+              <DollarSign className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                {stats ? formatCurrency(stats.total_expenses) : '$0.00'}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Approved expenses this month
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Net Income</CardTitle>
+              <TrendingUp className={`h-4 w-4 ${stats && stats.net_income >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${stats && stats.net_income >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {stats ? formatCurrency(stats.net_income) : '$0.00'}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Offerings minus expenses
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Attendance Chart Section */}

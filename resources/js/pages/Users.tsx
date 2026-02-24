@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Shield, Users as UsersIcon, Edit, Trash2 } from 'lucide-react';
+import { UserPlus, Shield, Users as UsersIcon, Edit } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Spinner } from '../components/ui/spinner';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '../components/ui/dialog';
 import { userApi, User, UserFormData } from '../lib/userApi';
 import { useToast } from '../contexts/ToastContext';
 import { getErrorMessage } from '../lib/errorHandler';
 import UserForm from '../components/users/UserForm';
+import ArchiveButton from '../components/archive/ArchiveButton';
 
 /**
  * Users Page Component (Admin Only)
@@ -33,7 +27,6 @@ const Users: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   
   const { showToast } = useToast();
 
@@ -79,28 +72,10 @@ const Users: React.FC = () => {
   };
 
   /**
-   * Handle delete user button click
+   * Handle archive success callback
    */
-  const handleDeleteUser = (user: User) => {
-    setUserToDelete(user);
-  };
-
-  /**
-   * Confirm delete user
-   */
-  const confirmDeleteUser = async () => {
-    if (!userToDelete) return;
-
-    try {
-      await userApi.deleteUser(userToDelete.id);
-      showToast('success', 'User deleted successfully');
-      fetchUsers();
-      setUserToDelete(null);
-    } catch (error: any) {
-      console.error('Error deleting user:', error);
-      const errorMessage = getErrorMessage(error, 'Failed to delete user');
-      showToast('error', errorMessage);
-    }
+  const handleArchiveSuccess = async () => {
+    await fetchUsers();
   };
 
   /**
@@ -245,14 +220,15 @@ const Users: React.FC = () => {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
+                        <ArchiveButton
+                          itemType="users"
+                          itemId={user.id}
+                          itemName={user.name}
+                          onArchiveSuccess={handleArchiveSuccess}
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeleteUser(user)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          iconOnly={true}
+                        />
                       </div>
                     </td>
                   </tr>
@@ -271,34 +247,6 @@ const Users: React.FC = () => {
         user={selectedUser}
         isLoading={isLoading}
       />
-
-      {/* Delete Confirmation Dialog */}
-      {userToDelete && (
-        <Dialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete User</DialogTitle>
-            </DialogHeader>
-            <p className="text-sm text-gray-600">
-              Are you sure you want to delete <strong>{userToDelete.name}</strong>? This action cannot be undone.
-            </p>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setUserToDelete(null)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={confirmDeleteUser}
-              >
-                Delete
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 };

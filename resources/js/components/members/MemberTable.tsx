@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Edit, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Edit, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -9,6 +9,7 @@ import {
   TableRow,
 } from '../ui/table';
 import { Button } from '../ui/button';
+import ArchiveButton from '../archive/ArchiveButton';
 
 /**
  * Member interface matching backend data structure
@@ -52,6 +53,7 @@ export interface MemberTableProps {
   members: Member[];
   onEdit?: (member: Member) => void;
   onDelete?: (member: Member) => void;
+  onArchiveSuccess?: () => void;
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
@@ -75,6 +77,7 @@ const MemberTable: React.FC<MemberTableProps> = React.memo(({
   members,
   onEdit,
   onDelete,
+  onArchiveSuccess,
   currentPage,
   totalPages,
   onPageChange,
@@ -298,15 +301,16 @@ const MemberTable: React.FC<MemberTableProps> = React.memo(({
                       </Button>
                     )}
                     {onDelete && (
-                      <Button
+                      <ArchiveButton
+                        itemType="members"
+                        itemId={member.id}
+                        itemName={`${member.first_name} ${member.last_name}`}
+                        onArchiveSuccess={onArchiveSuccess}
                         variant="ghost"
                         size="sm"
-                        onClick={() => onDelete(member)}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        title="Delete member"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        iconOnly={true}
+                        className="h-8 w-8 p-0"
+                      />
                     )}
                   </div>
                 </TableCell>

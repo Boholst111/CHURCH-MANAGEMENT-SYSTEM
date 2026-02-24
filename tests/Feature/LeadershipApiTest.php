@@ -340,7 +340,8 @@ class LeadershipApiTest extends TestCase
                 'success' => true,
                 'message' => 'Leadership profile deleted successfully',
             ]);
-        $this->assertDatabaseMissing('leadership', ['id' => $leadership->id]);
+        // Check that leadership is soft deleted (has deleted_at timestamp)
+        $this->assertSoftDeleted('leadership', ['id' => $leadership->id]);
     }
 
     /** @test */

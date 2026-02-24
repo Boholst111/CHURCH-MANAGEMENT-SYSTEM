@@ -22,6 +22,9 @@ describe('useDashboardData', () => {
     monthly_tithes: 5000,
     upcoming_events: 3,
     new_visitors: 12,
+    total_offerings: 8000,
+    total_expenses: 3000,
+    net_income: 5000,
   };
 
   const mockAttendance = [

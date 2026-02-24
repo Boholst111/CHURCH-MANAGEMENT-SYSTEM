@@ -200,7 +200,8 @@ class LeadershipControllerTest extends TestCase
         $data = json_decode($response->getContent(), true);
         $this->assertTrue($data['success']);
         $this->assertEquals('Leadership profile deleted successfully', $data['message']);
-        $this->assertDatabaseMissing('leadership', ['id' => $leadership->id]);
+        // Check that leadership is soft deleted (has deleted_at timestamp)
+        $this->assertSoftDeleted('leadership', ['id' => $leadership->id]);
     }
 
     /** @test */
