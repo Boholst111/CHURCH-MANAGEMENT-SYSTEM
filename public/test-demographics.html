@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Demographics API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Demographics API Test</h1>
+    <button onclick="testAPI()">Test API Call</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch('/api/reports/demographics', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include' // Important for cookies/session
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <h2 class="${response.ok ? 'success' : 'error'}">
+                        Status: ${response.status} ${response.statusText}
+                    </h2>
+                    <h3>Response:</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h2 class="error">Error:</h2>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
