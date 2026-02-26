@@ -40,8 +40,8 @@ export const reportsApi = {
    * Get demographic report data
    */
   getDemographicReport: async (): Promise<DemographicData> => {
-    console.log('[REPORTS_API] Making request to /api/reports/demographics');
-    const response = await api.get('/api/reports/demographics');
+    console.log('[REPORTS_API] Making request to /reports/demographics');
+    const response = await api.get('/reports/demographics');
     console.log('[REPORTS_API] Raw axios response:', response);
     console.log('[REPORTS_API] response.data type:', typeof response.data);
     console.log('[REPORTS_API] response.data:', JSON.stringify(response.data, null, 2));
