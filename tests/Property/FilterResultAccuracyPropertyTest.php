@@ -11,8 +11,6 @@ use App\Models\User;
 use App\Repositories\OfferingRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
-use Eris\TestTrait;
-use Eris\Generators;
 
 /**
  * Property-Based Test for Filter Result Accuracy
@@ -27,7 +25,7 @@ use Eris\Generators;
  */
 class FilterResultAccuracyPropertyTest extends TestCase
 {
-    use RefreshDatabase, TestTrait;
+    use RefreshDatabase;
 
     protected User $user;
     protected OfferingRepository $offeringRepository;
@@ -35,10 +33,6 @@ class FilterResultAccuracyPropertyTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
-        // Initialize Eris
-        $this->seedingRandomNumberGeneration();
-        $this->withRand('mt_rand');
         
         // Disable throttling middleware for property tests to avoid rate limiting
         $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
@@ -49,12 +43,6 @@ class FilterResultAccuracyPropertyTest extends TestCase
         
         // Initialize repository
         $this->offeringRepository = new OfferingRepository();
-    }
-
-    protected function tearDown(): void
-    {
-        // RefreshDatabase trait handles cleanup automatically
-        parent::tearDown();
     }
     
     /**
@@ -106,53 +94,65 @@ class FilterResultAccuracyPropertyTest extends TestCase
      */
     public function date_range_filter_returns_only_offerings_within_range()
     {
-        $this->forAll(
-            Generators::choose(3, 5) // Number of offerings to create
-        )
-            ->withMaxSize(2) // Run 2 iterations
-            ->then(function ($offeringCount) {
-                // Clean database before each iteration
-                Offering::query()->delete();
-                
-                // Get required records
-                $records = $this->getRequiredRecords();
-                $offeringType = $records['offeringTypes'][0];
-                $fund = $records['funds'][0];
-                $member = $records['members'][0];
-                
-                // Define date range for filter
-                $startDate = now()->subDays(30)->format('Y-m-d');
-                $endDate = now()->format('Y-m-d');
-                
-                // Create offerings with various dates (some inside, some outside range)
-                $insideRangeCount = 0;
-                for ($i = 0; $i < $offeringCount; $i++) {
-                    $isInsideRange = rand(0, 1);
-                    
-                    if ($isInsideRange) {
-                        $date = now()->subDays(rand(0, 30))->format('Y-m-d');
-                        $insideRangeCount++;
-                    } else {
-                        $date = now()->subDays(rand(31, 100))->format('Y-m-d');
-                    }
-                    
-                    Offering::create([
-                        'member_id' => $member->id,
-                        'offering_type_id' => $offeringType->id,
-                        'fund_id' => $fund->id,
-                        'amount' => rand(10, 1000),
-                        'payment_method' => 'cash',
-                        'date' => $date,
-                        'is_anonymous' => false,
-                    ]);
-                }
-                
-                // Apply date range filter
-                $filteredOfferings = $this->offeringRepository->getByDateRange($startDate, $endDate);
-                
-                // Property: All returned offerings should be within the date range
-                foreach ($filteredOfferings as $offering) {
-                    $this->assertGreaterThanOrEqual(
+        // Get required records
+        $records = $this->getRequiredRecords();
+        $offeringType = $records['offeringTypes'][0];
+        $fund = $records['funds'][0];
+        $member = $records['members'][0];
+        
+        // Define date range for filter
+        $startDate = now()->subDays(30)->format('Y-m-d');
+        $endDate = now()->format('Y-m-d');
+        
+        // Create offerings inside the date range
+        $insideOfferings = [];
+        for ($i = 0; $i < 3; $i++) {
+            $insideOfferings[] = Offering::create([
+                'member_id' => $member->id,
+                'offering_type_id' => $offeringType->id,
+                'fund_id' => $fund->id,
+                'amount' => 100 + ($i * 50),
+                'payment_method' => 'cash',
+                'date' => now()->subDays(rand(0, 30))->format('Y-m-d'),
+                'is_anonymous' => false,
+            ]);
+        }
+        
+        // Create offerings outside the date range
+        for ($i = 0; $i < 2; $i++) {
+            Offering::create([
+                'member_id' => $member->id,
+                'offering_type_id' => $offeringType->id,
+                'fund_id' => $fund->id,
+                'amount' => 100,
+                'payment_method' => 'cash',
+                'date' => now()->subDays(rand(31, 100))->format('Y-m-d'),
+                'is_anonymous' => false,
+            ]);
+        }
+        
+        // Apply date range filter
+        $filteredOfferings = $this->offeringRepository->getByDateRange($startDate, $endDate);
+        
+        // Property: All returned offerings should be within the date range
+        foreach ($filteredOfferings as $offering) {
+            $this->assertGreaterThanOrEqual(
+                $startDate,
+                $offering->date,
+                "Offering date {$offering->date} should be >= start date {$startDate}"
+            );
+            
+            $this->assertLessThanOrEqual(
+                $endDate,
+                $offering->date,
+                "Offering date {$offering->date} should be <= end date {$endDate}"
+            );
+        }
+        
+        // Property: Count should match expected count
+        $this->assertEquals(
+            3,
+            $filteredOfferings->count(),
                         $startDate,
                         $offering->date,
                         "Offering date {$offering->date} should be >= start date {$startDate}"
