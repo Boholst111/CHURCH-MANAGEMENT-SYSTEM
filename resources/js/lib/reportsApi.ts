@@ -41,26 +41,31 @@ export const reportsApi = {
    */
   getDemographicReport: async (): Promise<DemographicData> => {
     console.log('[REPORTS_API] Making request to /api/reports/demographics');
-    const response = await api.get<ApiResponse<DemographicData>>('/api/reports/demographics');
-    console.log('[REPORTS_API] Full response:', response);
-    console.log('[REPORTS_API] response.data:', response.data);
-    console.log('[REPORTS_API] response.data.data:', response.data.data);
+    const response = await api.get('/api/reports/demographics');
+    console.log('[REPORTS_API] Raw axios response:', response);
+    console.log('[REPORTS_API] response.data type:', typeof response.data);
+    console.log('[REPORTS_API] response.data:', JSON.stringify(response.data, null, 2));
     
-    // Handle both response.data.data and response.data formats
-    if (response.data && typeof response.data === 'object') {
-      // If response.data has a 'data' property, use it
-      if ('data' in response.data && response.data.data) {
-        console.log('[REPORTS_API] Returning response.data.data');
-        return response.data.data;
-      }
-      // Otherwise, check if response.data itself has the demographic structure
-      if ('by_age' in response.data) {
-        console.log('[REPORTS_API] Returning response.data directly');
-        return response.data as unknown as DemographicData;
-      }
+    // Axios response structure: response.data contains the server's JSON response
+    // Server returns: { success: true, data: { by_age: {...}, ... } }
+    // So response.data = { success: true, data: {...} }
+    // We need response.data.data
+    
+    const serverResponse = response.data as any;
+    
+    if (serverResponse && serverResponse.success && serverResponse.data) {
+      console.log('[REPORTS_API] Found data in serverResponse.data');
+      return serverResponse.data as DemographicData;
     }
     
-    console.error('[REPORTS_API] Could not extract demographic data from response');
+    // Fallback: check if response.data itself has the demographic structure
+    if (serverResponse && 'by_age' in serverResponse) {
+      console.log('[REPORTS_API] Found demographic data directly in serverResponse');
+      return serverResponse as DemographicData;
+    }
+    
+    console.error('[REPORTS_API] Could not find demographic data in response');
+    console.error('[REPORTS_API] Server response structure:', Object.keys(serverResponse || {}));
     throw new Error('Invalid response format from demographics API');
   },
 
