@@ -18,16 +18,23 @@ const Reports: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('Fetching demographic data...');
       const result = await reportsApi.getDemographicReport();
+      console.log('Demographic data received:', result);
       setDemographicData(result);
     } catch (err: any) {
       console.error('Error fetching demographic data:', err);
+      console.error('Error response:', err.response);
       if (err.response?.status === 403) {
         setError('You do not have permission to view demographic data');
       } else if (err.response?.status === 401) {
-        setError('Please log in to view demographic data');
+        setError('Please log in to view demographic data. Redirecting to login...');
+        // Redirect to login after 2 seconds
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
       } else {
-        setError('Failed to load demographic data');
+        setError(`Failed to load demographic data: ${err.message || 'Unknown error'}`);
       }
     } finally {
       setLoading(false);
