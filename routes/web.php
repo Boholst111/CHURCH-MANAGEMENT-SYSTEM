@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 
 // React App Route - serves the React SPA for all non-API routes
 // This must be LAST because it catches all routes not matched above
+// Exclude /api routes to prevent conflicts with API endpoints
 Route::get('/{any}', function () {
     return view('app');
-})->where('any', '.*');
+})->where('any', '^(?!api).*$');
