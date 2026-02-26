@@ -17,6 +17,16 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Log the full request URL for debugging
+  console.log('[API] Making request:', {
+    method: config.method,
+    baseURL: config.baseURL,
+    url: config.url,
+    fullURL: `${config.baseURL}${config.url}`,
+    headers: config.headers
+  });
+  
   return config;
 });
 
@@ -29,7 +39,16 @@ export const setSessionTimeoutHandler = (handler: () => void) => {
 
 // Handle auth errors and session expiration
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('[API] Response received:', {
+      url: response.config.url,
+      status: response.status,
+      contentType: response.headers['content-type'],
+      dataType: typeof response.data,
+      dataPreview: typeof response.data === 'string' ? response.data.substring(0, 100) : 'object'
+    });
+    return response;
+  },
   (error) => {
     // Log error for debugging
     console.error('API Error:', {
