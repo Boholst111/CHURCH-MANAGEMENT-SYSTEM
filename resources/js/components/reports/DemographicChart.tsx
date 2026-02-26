@@ -40,7 +40,10 @@ export const DemographicChart: React.FC<DemographicChartProps> = React.memo(({
   loading = false, 
   className 
 }) => {
+  console.log('[DEMOGRAPHIC_CHART] Rendering with:', { data, loading, dataType: typeof data, isNull: data === null, isUndefined: data === undefined });
+  
   if (loading) {
+    console.log('[DEMOGRAPHIC_CHART] Showing loading state');
     return (
       <div className={`h-80 flex items-center justify-center ${className || ''}`}>
         <div className="text-gray-500">Loading demographic data...</div>
@@ -49,6 +52,8 @@ export const DemographicChart: React.FC<DemographicChartProps> = React.memo(({
   }
 
   if (!data) {
+    console.warn('[DEMOGRAPHIC_CHART] No data available - showing empty state');
+    console.warn('[DEMOGRAPHIC_CHART] Data value:', data);
     return (
       <div className={`h-80 flex items-center justify-center ${className || ''}`}>
         <div className="text-gray-500">No demographic data available</div>
@@ -56,17 +61,21 @@ export const DemographicChart: React.FC<DemographicChartProps> = React.memo(({
     );
   }
 
+  console.log('[DEMOGRAPHIC_CHART] Data is valid, transforming for charts...');
+  
   // Transform age data for pie chart
   const ageData = Object.entries(data.by_age).map(([name, value]) => ({
     name,
     value,
   }));
+  console.log('[DEMOGRAPHIC_CHART] Age data:', ageData);
 
   // Transform location data for pie chart
   const locationData = Object.entries(data.by_location).map(([name, value]) => ({
     name,
     value,
   }));
+  console.log('[DEMOGRAPHIC_CHART] Location data:', locationData);
 
   return (
     <div className={className}>

@@ -18,13 +18,31 @@ const Reports: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching demographic data...');
+      console.log('[REPORTS] Fetching demographic data...');
+      console.log('[REPORTS] Token:', localStorage.getItem('token')?.substring(0, 20) + '...');
+      
       const result = await reportsApi.getDemographicReport();
-      console.log('Demographic data received:', result);
-      setDemographicData(result);
+      
+      console.log('[REPORTS] Demographic data received:', result);
+      console.log('[REPORTS] Data type:', typeof result);
+      console.log('[REPORTS] Data is null?', result === null);
+      console.log('[REPORTS] Data is undefined?', result === undefined);
+      console.log('[REPORTS] Data keys:', result ? Object.keys(result) : 'N/A');
+      
+      if (result) {
+        console.log('[REPORTS] Setting demographic data...');
+        setDemographicData(result);
+        console.log('[REPORTS] Data set successfully!');
+      } else {
+        console.warn('[REPORTS] Result is null or undefined!');
+        setError('Received empty data from server');
+      }
     } catch (err: any) {
-      console.error('Error fetching demographic data:', err);
-      console.error('Error response:', err.response);
+      console.error('[REPORTS] Error fetching demographic data:', err);
+      console.error('[REPORTS] Error response:', err.response);
+      console.error('[REPORTS] Error message:', err.message);
+      console.error('[REPORTS] Error stack:', err.stack);
+      
       if (err.response?.status === 403) {
         setError('You do not have permission to view demographic data');
       } else if (err.response?.status === 401) {
@@ -38,6 +56,7 @@ const Reports: React.FC = () => {
       }
     } finally {
       setLoading(false);
+      console.log('[REPORTS] Loading complete');
     }
   };
 

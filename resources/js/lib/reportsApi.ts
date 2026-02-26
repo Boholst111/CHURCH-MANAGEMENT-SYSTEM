@@ -40,8 +40,28 @@ export const reportsApi = {
    * Get demographic report data
    */
   getDemographicReport: async (): Promise<DemographicData> => {
+    console.log('[REPORTS_API] Making request to /api/reports/demographics');
     const response = await api.get<ApiResponse<DemographicData>>('/api/reports/demographics');
-    return response.data.data;
+    console.log('[REPORTS_API] Full response:', response);
+    console.log('[REPORTS_API] response.data:', response.data);
+    console.log('[REPORTS_API] response.data.data:', response.data.data);
+    
+    // Handle both response.data.data and response.data formats
+    if (response.data && typeof response.data === 'object') {
+      // If response.data has a 'data' property, use it
+      if ('data' in response.data && response.data.data) {
+        console.log('[REPORTS_API] Returning response.data.data');
+        return response.data.data;
+      }
+      // Otherwise, check if response.data itself has the demographic structure
+      if ('by_age' in response.data) {
+        console.log('[REPORTS_API] Returning response.data directly');
+        return response.data as unknown as DemographicData;
+      }
+    }
+    
+    console.error('[REPORTS_API] Could not extract demographic data from response');
+    throw new Error('Invalid response format from demographics API');
   },
 
   /**
