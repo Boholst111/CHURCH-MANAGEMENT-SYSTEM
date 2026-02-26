@@ -25,11 +25,11 @@ describe('DemographicChart', () => {
       'active': 90,
       'visitor': 20,
     },
-    by_small_group: {
-      'Youth Group': 25,
-      'Prayer Group': 30,
-      'Worship Team': 15,
-    },
+    by_small_group: [
+      { name: 'Youth Group', count: 25 },
+      { name: 'Prayer Group', count: 30 },
+      { name: 'Worship Team', count: 15 },
+    ],
     total_members: 110,
   };
 

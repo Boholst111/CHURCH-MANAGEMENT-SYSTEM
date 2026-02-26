@@ -367,7 +367,10 @@ describe('End-to-End Data Export Tests', () => {
         by_location: { 'Springfield': 100 },
         by_gender: { 'male': 60, 'female': 65 },
         by_status: { 'active': 100, 'visitor': 25 },
-        by_small_group: { 'Youth Group': 30, 'None': 95 },
+        by_small_group: [
+          { name: 'Youth Group', count: 30 },
+          { name: 'None', count: 95 },
+        ],
         total_members: 125,
       };
 
@@ -436,7 +439,7 @@ describe('End-to-End Data Export Tests', () => {
         data: [], summary: { total_giving: 0, average_giving: 0, giving_trend: 0, period_start: "", period_end: "" },
       });
       mockedReportsApi.getDemographicReport.mockResolvedValue({
-        by_age: {}, by_location: {}, by_gender: {}, by_status: {}, by_small_group: {}, total_members: 0,
+        by_age: {}, by_location: {}, by_gender: {}, by_status: {}, by_small_group: [], total_members: 0,
       });
 
       const mockPdfBlob = new Blob(['PDF content'], { type: 'application/pdf' });
@@ -502,7 +505,7 @@ describe('End-to-End Data Export Tests', () => {
         data: [], summary: { total_giving: 0, average_giving: 0, giving_trend: 0, period_start: "", period_end: "" },
       });
       mockedReportsApi.getDemographicReport.mockResolvedValue({
-        by_age: {}, by_location: {}, by_gender: {}, by_status: {}, by_small_group: {}, total_members: 0,
+        by_age: {}, by_location: {}, by_gender: {}, by_status: {}, by_small_group: [], total_members: 0,
       });
 
       mockedReportsApi.exportReportPdf.mockRejectedValue(
@@ -601,7 +604,7 @@ describe('End-to-End Data Export Tests', () => {
         data: [], summary: { total_giving: 0, average_giving: 0, giving_trend: 0, period_start: "", period_end: "" },
       });
       mockedReportsApi.getDemographicReport.mockResolvedValue({
-        by_age: {}, by_location: {}, by_gender: {}, by_status: {}, by_small_group: {}, total_members: 0,
+        by_age: {}, by_location: {}, by_gender: {}, by_status: {}, by_small_group: [], total_members: 0,
       });
 
       const mockPdfBlob = new Blob(['PDF content'], { type: 'application/pdf' });
@@ -650,3 +653,4 @@ describe('End-to-End Data Export Tests', () => {
     });
   });
 });
+

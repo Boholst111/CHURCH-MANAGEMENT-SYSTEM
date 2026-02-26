@@ -497,7 +497,10 @@ describe('End-to-End Integration Tests', () => {
         by_location: { 'Springfield': 60, 'Shelbyville': 40 },
         by_gender: { 'male': 50, 'female': 50 },
         by_status: { 'active': 80, 'visitor': 20 },
-        by_small_group: { 'Youth Group': 30, 'None': 70 },
+        by_small_group: [
+          { name: 'Youth Group', count: 30 },
+          { name: 'None', count: 70 },
+        ],
         total_members: 100,
       };
 
@@ -587,7 +590,7 @@ describe('End-to-End Integration Tests', () => {
       };
 
       const mockDemographicData = {
-        by_age: {}, by_location: {}, by_gender: {}, by_status: {}, by_small_group: {}, total_members: 0,
+        by_age: {}, by_location: {}, by_gender: {}, by_status: {}, by_small_group: [], total_members: 0,
       };
 
       mockedReportsApi.getFinancialReport.mockResolvedValue(mockFinancialData);
@@ -639,7 +642,7 @@ describe('End-to-End Integration Tests', () => {
         data: [], summary: { total_giving: 0, average_giving: 0, giving_trend: 0, period_start: "", period_end: "" },
       });
       mockedReportsApi.getDemographicReport.mockResolvedValue({
-        by_age: {}, by_location: {}, by_gender: {}, by_status: {}, by_small_group: {}, total_members: 0,
+        by_age: {}, by_location: {}, by_gender: {}, by_status: {}, by_small_group: [], total_members: 0,
       });
 
       mockedReportsApi.exportReportPdf.mockRejectedValueOnce(

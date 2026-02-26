@@ -112,7 +112,9 @@ const Reports: React.FC = () => {
               <div className="text-center">
                 <p className="text-sm text-gray-600">Small Groups</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  {Object.keys(demographicData.by_small_group).length}
+                  {Array.isArray(demographicData.by_small_group) 
+                    ? demographicData.by_small_group.length 
+                    : Object.keys(demographicData.by_small_group).length}
                 </p>
               </div>
             </div>

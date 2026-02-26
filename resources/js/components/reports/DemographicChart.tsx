@@ -13,7 +13,7 @@ export interface DemographicData {
   by_location: Record<string, number>;
   by_gender: Record<string, number>;
   by_status: Record<string, number>;
-  by_small_group: Record<string, number>;
+  by_small_group: Array<{name: string; count: number}>;
   total_members: number;
 }
 
