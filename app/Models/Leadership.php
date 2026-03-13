@@ -32,6 +32,7 @@ class Leadership extends Model
         'photo_url',
         'bio',
         'start_date',
+        'ministry_teams',
     ];
 
     /**
@@ -60,6 +61,7 @@ class Leadership extends Model
             'photo_url' => 'nullable|string',
             'bio' => 'nullable|string',
             'start_date' => 'required|date',
+            'ministry_teams' => 'nullable|string',
         ];
     }
 }

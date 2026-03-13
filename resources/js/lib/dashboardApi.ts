@@ -1,5 +1,5 @@
 import api from './api';
-import { ApiResponse, DashboardStats, AttendanceData, Activity } from './types';
+import { ApiResponse, DashboardStats, AttendanceData, Activity, UpcomingEvent } from './types';
 
 /**
  * Dashboard API client methods
@@ -27,6 +27,17 @@ export const dashboardApi = {
    */
   getActivities: async (limit: number = 10): Promise<Activity[]> => {
     const response = await api.get<ApiResponse<Activity[]>>('/dashboard/activities', {
+      params: { limit },
+    });
+    return response.data.data;
+  },
+
+  /**
+   * Get upcoming events
+   * @param limit - Number of events to fetch (default: 5, max: 20)
+   */
+  getUpcomingEvents: async (limit: number = 5): Promise<UpcomingEvent[]> => {
+    const response = await api.get<ApiResponse<UpcomingEvent[]>>('/dashboard/upcoming-events', {
       params: { limit },
     });
     return response.data.data;

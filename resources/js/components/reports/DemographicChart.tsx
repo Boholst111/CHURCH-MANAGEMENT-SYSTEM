@@ -7,6 +7,7 @@ import {
   Legend,
   Tooltip,
 } from 'recharts';
+import { useIsMobile } from '../../hooks/useBreakpoint';
 
 export interface DemographicData {
   by_age: Record<string, number>;
@@ -40,6 +41,8 @@ export const DemographicChart: React.FC<DemographicChartProps> = React.memo(({
   loading = false, 
   className 
 }) => {
+  const isMobile = useIsMobile();
+  
   console.log('[DEMOGRAPHIC_CHART] Rendering with:', { data, loading, dataType: typeof data, isNull: data === null, isUndefined: data === undefined });
   
   if (loading) {
@@ -77,30 +80,36 @@ export const DemographicChart: React.FC<DemographicChartProps> = React.memo(({
   }));
   console.log('[DEMOGRAPHIC_CHART] Location data:', locationData);
 
+  // Mobile optimizations
+  const fontSize = isMobile ? 10 : 12;
+  const chartHeight = isMobile ? 250 : 300;
+  const outerRadius = isMobile ? 60 : 80;
+  const legendHeight = isMobile ? 50 : 36;
+
   return (
     <div className={className}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Age Distribution Chart */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+          <h3 className={`font-semibold text-gray-900 mb-4 text-center ${isMobile ? 'text-base' : 'text-lg'}`}>
             Age Distribution
           </h3>
           {ageData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={chartHeight}>
               <PieChart>
                 <Pie
                   data={ageData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  outerRadius={80}
+                  outerRadius={outerRadius}
                   fill="#8884d8"
                   dataKey="value"
-                  label={(entry) => {
+                  label={!isMobile ? (entry) => {
                     const total = ageData.reduce((sum, item) => sum + item.value, 0);
                     const percent = ((entry.value / total) * 100).toFixed(0);
                     return `${entry.name}: ${percent}%`;
-                  }}
+                  } : false}
                 >
                   {ageData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -111,7 +120,8 @@ export const DemographicChart: React.FC<DemographicChartProps> = React.memo(({
                     backgroundColor: '#ffffff',
                     border: '1px solid #e5e7eb',
                     borderRadius: '8px',
-                    padding: '8px 12px',
+                    padding: isMobile ? '6px 10px' : '8px 12px',
+                    fontSize: `${fontSize}px`,
                   }}
                   formatter={(value: number | undefined) => 
                     value !== undefined ? [value, 'Members'] : ['N/A', 'Members']
@@ -119,13 +129,24 @@ export const DemographicChart: React.FC<DemographicChartProps> = React.memo(({
                 />
                 <Legend
                   verticalAlign="bottom"
-                  height={36}
+                  height={legendHeight}
                   iconType="circle"
+                  iconSize={isMobile ? 8 : 10}
+                  wrapperStyle={{
+                    fontSize: `${fontSize}px`,
+                  }}
+                  // Simplify legend on mobile - truncate long labels
+                  formatter={(value) => {
+                    if (isMobile && value.length > 10) {
+                      return value.substring(0, 10) + '...';
+                    }
+                    return value;
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-gray-500">
+            <div className={`flex items-center justify-center text-gray-500 ${isMobile ? 'h-[250px]' : 'h-[300px]'}`}>
               No age data available
             </div>
           )}
@@ -133,25 +154,25 @@ export const DemographicChart: React.FC<DemographicChartProps> = React.memo(({
 
         {/* Location Distribution Chart */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+          <h3 className={`font-semibold text-gray-900 mb-4 text-center ${isMobile ? 'text-base' : 'text-lg'}`}>
             Location Distribution
           </h3>
           {locationData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={chartHeight}>
               <PieChart>
                 <Pie
                   data={locationData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  outerRadius={80}
+                  outerRadius={outerRadius}
                   fill="#8884d8"
                   dataKey="value"
-                  label={(entry) => {
+                  label={!isMobile ? (entry) => {
                     const total = locationData.reduce((sum, item) => sum + item.value, 0);
                     const percent = ((entry.value / total) * 100).toFixed(0);
                     return `${entry.name}: ${percent}%`;
-                  }}
+                  } : false}
                 >
                   {locationData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -162,7 +183,8 @@ export const DemographicChart: React.FC<DemographicChartProps> = React.memo(({
                     backgroundColor: '#ffffff',
                     border: '1px solid #e5e7eb',
                     borderRadius: '8px',
-                    padding: '8px 12px',
+                    padding: isMobile ? '6px 10px' : '8px 12px',
+                    fontSize: `${fontSize}px`,
                   }}
                   formatter={(value: number | undefined) => 
                     value !== undefined ? [value, 'Members'] : ['N/A', 'Members']
@@ -170,13 +192,24 @@ export const DemographicChart: React.FC<DemographicChartProps> = React.memo(({
                 />
                 <Legend
                   verticalAlign="bottom"
-                  height={36}
+                  height={legendHeight}
                   iconType="circle"
+                  iconSize={isMobile ? 8 : 10}
+                  wrapperStyle={{
+                    fontSize: `${fontSize}px`,
+                  }}
+                  // Simplify legend on mobile - truncate long labels
+                  formatter={(value) => {
+                    if (isMobile && value.length > 10) {
+                      return value.substring(0, 10) + '...';
+                    }
+                    return value;
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-gray-500">
+            <div className={`flex items-center justify-center text-gray-500 ${isMobile ? 'h-[250px]' : 'h-[300px]'}`}>
               No location data available
             </div>
           )}

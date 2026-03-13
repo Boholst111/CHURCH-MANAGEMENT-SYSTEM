@@ -178,26 +178,28 @@ describe('ToastContext', () => {
       screen.getByText('Show Success').click();
     });
 
-    // Success toast should have green styling
-    const successToast = screen.getByText('Success message').closest('div');
-    expect(successToast).toHaveClass('bg-green-50');
+    // Success toast should have success styling
+    const successToast = screen.getByRole('alert');
+    expect(successToast).toHaveClass('bg-success-50');
 
     // Show error toast
     act(() => {
       screen.getByText('Show Error').click();
     });
 
-    // Error toast should have red styling
-    const errorToast = screen.getByText('Error message').closest('div');
-    expect(errorToast).toHaveClass('bg-red-50');
+    // Error toast should have error styling (get all alerts, last one is the new one)
+    const alerts = screen.getAllByRole('alert');
+    const errorToast = alerts[alerts.length - 1];
+    expect(errorToast).toHaveClass('bg-error-50');
 
     // Show info toast
     act(() => {
       screen.getByText('Show Info').click();
     });
 
-    // Info toast should have blue styling
-    const infoToast = screen.getByText('Info message').closest('div');
-    expect(infoToast).toHaveClass('bg-blue-50');
+    // Info toast should have info styling
+    const allAlerts = screen.getAllByRole('alert');
+    const infoToast = allAlerts[allAlerts.length - 1];
+    expect(infoToast).toHaveClass('bg-info-50');
   });
 });

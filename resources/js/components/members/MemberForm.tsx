@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Upload, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -8,23 +12,43 @@ import {
 } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { Select } from '../ui/select';
 import { Member } from './MemberTable';
+
+/**
+ * Form validation schema using Zod
+ */
+const memberFormSchema = z.object({
+  first_name: z.string()
+    .min(1, 'First name is required')
+    .max(100, 'First name must be 100 characters or less'),
+  last_name: z.string()
+    .min(1, 'Last name is required')
+    .max(100, 'Last name must be 100 characters or less'),
+  email: z.string()
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address'),
+  phone: z.string()
+    .min(1, 'Phone number is required')
+    .regex(/^[\d\s\-\+\(\)]+$/, 'Please enter a valid phone number'),
+  address: z.string().min(1, 'Address is required'),
+  city: z.string().min(1, 'City is required'),
+  status: z.enum(['active', 'visitor']),
+  membership_type: z.enum(['regular', 'associate', 'visitor']),
+  small_group_id: z.number().nullable(),
+  date_joined: z.string().min(1, 'Date joined is required'),
+  birth_date: z.string().optional(),
+  gender: z.enum(['male', 'female', 'other']),
+});
+
+type MemberFormValues = z.infer<typeof memberFormSchema>;
 
 /**
  * Form data interface for member creation/editing
  */
-export interface MemberFormData {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  address: string;
-  city: string;
-  status: 'active' | 'visitor';
-  small_group_id: number | null;
-  date_joined: string;
-  birth_date: string;
-  gender: 'male' | 'female' | 'other';
+export interface MemberFormData extends Omit<MemberFormValues, 'birth_date'> {
+  birth_date: string | null;
+  photo?: File | null;
 }
 
 /**
@@ -38,6 +62,7 @@ export interface ValidationErrors {
   address?: string;
   city?: string;
   status?: string;
+  membership_type?: string;
   date_joined?: string;
   birth_date?: string;
   gender?: string;
@@ -70,11 +95,15 @@ export interface MemberFormProps {
  * 
  * Features:
  * - Input fields for all member properties
- * - Form validation with inline error messages
+ * - Form validation with react-hook-form and zod
+ * - Photo upload functionality with preview
+ * - Inline error messages
  * - Support for both create and edit modes
- * - Small group selection dropdown
+ * - Small group and membership type selection
+ * - Loading states during submission
  * 
  * Validates Requirements: 3.4, 3.5, 3.6
+ * Design Reference: Modal with Form example
  */
 const MemberForm: React.FC<MemberFormProps> = ({
   isOpen,
@@ -84,29 +113,46 @@ const MemberForm: React.FC<MemberFormProps> = ({
   smallGroups = [],
   isLoading = false,
 }) => {
-  const [formData, setFormData] = useState<MemberFormData>({
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    status: 'active',
-    small_group_id: null,
-    date_joined: new Date().toISOString().split('T')[0],
-    birth_date: '',
-    gender: 'male',
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    setValue,
+    watch,
+  } = useForm<MemberFormValues>({
+    resolver: zodResolver(memberFormSchema),
+    defaultValues: {
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      status: 'active',
+      membership_type: 'regular',
+      small_group_id: null,
+      date_joined: new Date().toISOString().split('T')[0],
+      birth_date: '',
+      gender: 'male',
+    },
   });
 
-  const [errors, setErrors] = useState<ValidationErrors>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const statusValue = watch('status');
+  const membershipTypeValue = watch('membership_type');
+  const smallGroupValue = watch('small_group_id');
+  const genderValue = watch('gender');
 
   /**
    * Initialize form data when member prop changes
    */
   useEffect(() => {
     if (member) {
-      setFormData({
+      reset({
         first_name: member.first_name,
         last_name: member.last_name,
         email: member.email,
@@ -114,14 +160,20 @@ const MemberForm: React.FC<MemberFormProps> = ({
         address: member.address,
         city: member.city,
         status: member.status,
+        membership_type: (member as any).membership_type || 'regular',
         small_group_id: member.small_group_id,
         date_joined: member.date_joined.split('T')[0],
         birth_date: member.birth_date ? member.birth_date.split('T')[0] : '',
         gender: member.gender,
       });
+      
+      // Set photo preview if member has a photo
+      if ((member as any).photo_url) {
+        setPhotoPreview((member as any).photo_url);
+      }
     } else {
       // Reset form for new member
-      setFormData({
+      reset({
         first_name: '',
         last_name: '',
         email: '',
@@ -129,121 +181,80 @@ const MemberForm: React.FC<MemberFormProps> = ({
         address: '',
         city: '',
         status: 'active',
+        membership_type: 'regular',
         small_group_id: null,
         date_joined: new Date().toISOString().split('T')[0],
         birth_date: '',
         gender: 'male',
       });
+      setPhotoPreview(null);
+      setPhotoFile(null);
     }
-    setErrors({});
-  }, [member, isOpen]);
+  }, [member, isOpen, reset]);
 
   /**
-   * Validate form data
+   * Handle photo file selection
    */
-  const validateForm = (): boolean => {
-    const newErrors: ValidationErrors = {};
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
 
-    // Required fields
-    if (!formData.first_name.trim()) {
-      newErrors.first_name = 'First name is required';
-    } else if (formData.first_name.length > 100) {
-      newErrors.first_name = 'First name must be 100 characters or less';
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size must be less than 5MB');
+        return;
+      }
+
+      setPhotoFile(file);
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-
-    if (!formData.last_name.trim()) {
-      newErrors.last_name = 'Last name is required';
-    } else if (formData.last_name.length > 100) {
-      newErrors.last_name = 'Last name must be 100 characters or less';
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
-    }
-
-    if (!formData.address.trim()) {
-      newErrors.address = 'Address is required';
-    }
-
-    if (!formData.city.trim()) {
-      newErrors.city = 'City is required';
-    }
-
-    if (!formData.date_joined) {
-      newErrors.date_joined = 'Date joined is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   /**
-   * Handle input change
+   * Remove photo
    */
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    
-    // Clear error for this field when user starts typing
-    if (errors[name as keyof ValidationErrors]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: undefined,
-      }));
-    }
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
   };
 
   /**
    * Handle form submission
    */
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
+  const onFormSubmit = async (data: MemberFormValues) => {
     setIsSubmitting(true);
     try {
+      const formData: MemberFormData = {
+        ...data,
+        birth_date: data.birth_date || null,
+        photo: photoFile,
+      };
       await onSubmit(formData);
-      onClose();
+      // Form will be closed by parent component on success
     } catch (error: any) {
-      // Handle server-side validation errors
-      if (error.response?.data?.errors) {
-        setErrors(error.response.data.errors);
-      }
-      // Don't close the form if there's an error
+      // Error handling is done in parent component
+      console.error('Form submission error:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  /**
-   * Handle dialog close
-   */
-  const handleClose = (open: boolean) => {
-    if (!open && !isSubmitting) {
-      onClose();
-    }
-  };
-
   return (
-    <Dialog open={isOpen} onOpenChange={() => {
-      // Don't automatically close the dialog
-      // The dialog will only close when onClose is explicitly called
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open && !isSubmitting) {
+        onClose();
+      }
     }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -252,232 +263,187 @@ const MemberForm: React.FC<MemberFormProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+          {/* Photo Upload */}
+          <div className="flex flex-col items-center space-y-3">
+            <div className="relative">
+              {photoPreview ? (
+                <div className="relative">
+                  <img
+                    src={photoPreview}
+                    alt="Member photo preview"
+                    className="w-32 h-32 rounded-full object-cover border-4 border-primary-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="absolute -top-2 -right-2 bg-error-500 text-white rounded-full p-1 hover:bg-error-600 transition-colors"
+                    aria-label="Remove photo"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-32 h-32 rounded-full bg-neutral-100 border-2 border-dashed border-neutral-300 flex items-center justify-center">
+                  <Upload className="h-8 w-8 text-neutral-400" />
+                </div>
+              )}
+            </div>
+            <label className="cursor-pointer">
+              <span className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                {photoPreview ? 'Change Photo' : 'Upload Photo'}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                className="hidden"
+                disabled={isSubmitting}
+              />
+            </label>
+            <p className="text-xs text-neutral-500">
+              JPG, PNG or GIF. Max size 5MB.
+            </p>
+          </div>
+
           {/* Name Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
-                First Name <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="first_name"
-                name="first_name"
-                type="text"
-                value={formData.first_name}
-                onChange={handleChange}
-                className={errors.first_name ? 'border-red-500' : ''}
-                disabled={isSubmitting}
-              />
-              {errors.first_name && (
-                <p className="text-sm text-red-600 mt-1">{errors.first_name}</p>
-              )}
-            </div>
+            <Input
+              label="First Name"
+              {...register('first_name')}
+              error={errors.first_name?.message}
+              disabled={isSubmitting}
+              required
+            />
 
-            <div>
-              <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
-                Last Name <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="last_name"
-                name="last_name"
-                type="text"
-                value={formData.last_name}
-                onChange={handleChange}
-                className={errors.last_name ? 'border-red-500' : ''}
-                disabled={isSubmitting}
-              />
-              {errors.last_name && (
-                <p className="text-sm text-red-600 mt-1">{errors.last_name}</p>
-              )}
-            </div>
+            <Input
+              label="Last Name"
+              {...register('last_name')}
+              error={errors.last_name?.message}
+              disabled={isSubmitting}
+              required
+            />
           </div>
 
           {/* Contact Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={errors.email ? 'border-red-500' : ''}
-                disabled={isSubmitting}
-              />
-              {errors.email && (
-                <p className="text-sm text-red-600 mt-1">{errors.email}</p>
-              )}
-            </div>
+            <Input
+              label="Email"
+              type="email"
+              {...register('email')}
+              error={errors.email?.message}
+              disabled={isSubmitting}
+              required
+            />
 
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                Phone <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="phone"
-                name="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={handleChange}
-                className={errors.phone ? 'border-red-500' : ''}
-                disabled={isSubmitting}
-              />
-              {errors.phone && (
-                <p className="text-sm text-red-600 mt-1">{errors.phone}</p>
-              )}
-            </div>
+            <Input
+              label="Phone"
+              type="tel"
+              {...register('phone')}
+              error={errors.phone?.message}
+              disabled={isSubmitting}
+              required
+            />
           </div>
 
           {/* Address Fields */}
-          <div>
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-              Address <span className="text-red-500">*</span>
-            </label>
-            <Input
-              id="address"
-              name="address"
-              type="text"
-              value={formData.address}
-              onChange={handleChange}
-              className={errors.address ? 'border-red-500' : ''}
+          <Input
+            label="Address"
+            {...register('address')}
+            error={errors.address?.message}
+            disabled={isSubmitting}
+            required
+          />
+
+          <Input
+            label="City"
+            {...register('city')}
+            error={errors.city?.message}
+            disabled={isSubmitting}
+            required
+          />
+
+          {/* Status, Membership Type, and Small Group */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Select
+              label="Status"
+              value={statusValue}
+              onChange={(value) => setValue('status', value as 'active' | 'visitor')}
+              options={[
+                { value: 'active', label: 'Active' },
+                { value: 'visitor', label: 'Visitor' },
+              ]}
+              error={errors.status?.message}
+              disabled={isSubmitting}
+              required
+            />
+
+            <Select
+              label="Membership Type"
+              value={membershipTypeValue}
+              onChange={(value) => setValue('membership_type', value as 'regular' | 'associate' | 'visitor')}
+              options={[
+                { value: 'regular', label: 'Regular Member' },
+                { value: 'associate', label: 'Associate Member' },
+                { value: 'visitor', label: 'Visitor' },
+              ]}
+              error={errors.membership_type?.message}
+              disabled={isSubmitting}
+              required
+            />
+
+            <Select
+              label="Small Group"
+              value={smallGroupValue?.toString() || ''}
+              onChange={(value) => {
+                const val = Array.isArray(value) ? value[0] : value;
+                setValue('small_group_id', val ? parseInt(val) : null);
+              }}
+              options={[
+                { value: '', label: 'None' },
+                ...smallGroups.map((group) => ({
+                  value: group.id.toString(),
+                  label: group.name,
+                })),
+              ]}
               disabled={isSubmitting}
             />
-            {errors.address && (
-              <p className="text-sm text-red-600 mt-1">{errors.address}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-              City <span className="text-red-500">*</span>
-            </label>
-            <Input
-              id="city"
-              name="city"
-              type="text"
-              value={formData.city}
-              onChange={handleChange}
-              className={errors.city ? 'border-red-500' : ''}
-              disabled={isSubmitting}
-            />
-            {errors.city && (
-              <p className="text-sm text-red-600 mt-1">{errors.city}</p>
-            )}
-          </div>
-
-          {/* Status and Small Group */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-                Status <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                disabled={isSubmitting}
-              >
-                <option value="active">Active</option>
-                <option value="visitor">Visitor</option>
-              </select>
-              {errors.status && (
-                <p className="text-sm text-red-600 mt-1">{errors.status}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="small_group_id" className="block text-sm font-medium text-gray-700 mb-1">
-                Small Group
-              </label>
-              <select
-                id="small_group_id"
-                name="small_group_id"
-                value={formData.small_group_id || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setFormData((prev) => ({
-                    ...prev,
-                    small_group_id: value ? parseInt(value) : null,
-                  }));
-                }}
-                className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                disabled={isSubmitting}
-              >
-                <option value="">None</option>
-                {smallGroups.map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.name}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
           {/* Date Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="date_joined" className="block text-sm font-medium text-gray-700 mb-1">
-                Date Joined <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="date_joined"
-                name="date_joined"
-                type="date"
-                value={formData.date_joined}
-                onChange={handleChange}
-                className={errors.date_joined ? 'border-red-500' : ''}
-                disabled={isSubmitting}
-              />
-              {errors.date_joined && (
-                <p className="text-sm text-red-600 mt-1">{errors.date_joined}</p>
-              )}
-            </div>
+            <Input
+              label="Date Joined"
+              type="date"
+              {...register('date_joined')}
+              error={errors.date_joined?.message}
+              disabled={isSubmitting}
+              required
+            />
 
-            <div>
-              <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700 mb-1">
-                Birth Date
-              </label>
-              <Input
-                id="birth_date"
-                name="birth_date"
-                type="date"
-                value={formData.birth_date}
-                onChange={handleChange}
-                className={errors.birth_date ? 'border-red-500' : ''}
-                disabled={isSubmitting}
-              />
-              {errors.birth_date && (
-                <p className="text-sm text-red-600 mt-1">{errors.birth_date}</p>
-              )}
-            </div>
+            <Input
+              label="Birth Date"
+              type="date"
+              {...register('birth_date')}
+              error={errors.birth_date?.message}
+              disabled={isSubmitting}
+            />
           </div>
 
           {/* Gender */}
-          <div>
-            <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
-              Gender <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="gender"
-              name="gender"
-              value={formData.gender}
-              onChange={handleChange}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              disabled={isSubmitting}
-            >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
-            {errors.gender && (
-              <p className="text-sm text-red-600 mt-1">{errors.gender}</p>
-            )}
-          </div>
+          <Select
+            label="Gender"
+            value={genderValue}
+            onChange={(value) => setValue('gender', value as 'male' | 'female' | 'other')}
+            options={[
+              { value: 'male', label: 'Male' },
+              { value: 'female', label: 'Female' },
+              { value: 'other', label: 'Other' },
+            ]}
+            error={errors.gender?.message}
+            disabled={isSubmitting}
+            required
+          />
 
           {/* Form Actions */}
           <DialogFooter className="mt-6">

@@ -94,6 +94,7 @@ Route::middleware(['auth:sanctum', 'log.activity'])->group(function () {
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
     Route::get('/dashboard/attendance', [DashboardController::class, 'attendance']);
     Route::get('/dashboard/activities', [DashboardController::class, 'activities']);
+    Route::get('/dashboard/upcoming-events', [DashboardController::class, 'upcomingEvents']);
     
     // Member Routes
     Route::get('/members', [MemberController::class, 'index']);
@@ -194,6 +195,12 @@ Route::middleware(['auth:sanctum', 'log.activity'])->group(function () {
     Route::get('/settings/notifications', [SettingsController::class, 'getNotificationPreferences']);
     Route::put('/settings/notifications', [SettingsController::class, 'updateNotificationPreferences']);
     
+    // User Invitation Routes (admin only) - Must be before generic user routes
+    Route::post('/users/invite', [\App\Http\Controllers\Api\UserController::class, 'invite'])->middleware('role:admin');
+    Route::get('/users/invitations', [\App\Http\Controllers\Api\UserController::class, 'getInvitations'])->middleware('role:admin');
+    Route::post('/users/invitations/{id}/resend', [\App\Http\Controllers\Api\UserController::class, 'resendInvitation'])->middleware('role:admin');
+    Route::delete('/users/invitations/{id}', [\App\Http\Controllers\Api\UserController::class, 'cancelInvitation'])->middleware('role:admin');
+    
     // User Management Routes (admin only)
     Route::get('/users', [\App\Http\Controllers\Api\UserController::class, 'index'])->middleware('role:admin');
     Route::post('/users', [\App\Http\Controllers\Api\UserController::class, 'store'])->middleware('role:admin');
@@ -210,4 +217,19 @@ Route::middleware(['auth:sanctum', 'log.activity'])->group(function () {
     Route::get('/archives/{type}', [ArchiveController::class, 'indexByType'])->middleware('role:admin');
     Route::post('/archives/{type}/{id}/restore', [ArchiveController::class, 'restore'])->middleware('role:admin');
     Route::delete('/archives/{type}/{id}/force', [ArchiveController::class, 'forceDelete'])->middleware('role:admin');
+    
+    // Feature Flag Admin Routes (admin only)
+    Route::get('/feature-flags/admin', [\App\Http\Controllers\Api\FeatureFlagAdminController::class, 'index'])->middleware('role:admin');
+    Route::put('/feature-flags/admin', [\App\Http\Controllers\Api\FeatureFlagAdminController::class, 'update'])->middleware('role:admin');
+    Route::get('/feature-flags/admin/users', [\App\Http\Controllers\Api\FeatureFlagAdminController::class, 'users'])->middleware('role:admin');
+    
+    // Deployment Metrics Routes (admin only)
+    Route::get('/admin/deployment-metrics', [\App\Http\Controllers\Api\DeploymentMetricsController::class, 'index'])->middleware('role:admin');
+    
+    // Beta Feedback Routes
+    Route::post('/beta-feedback', [\App\Http\Controllers\Api\BetaFeedbackController::class, 'store']);
+    Route::get('/beta-feedback', [\App\Http\Controllers\Api\BetaFeedbackController::class, 'index'])->middleware('role:admin');
+    Route::get('/beta-feedback/stats', [\App\Http\Controllers\Api\BetaFeedbackController::class, 'stats'])->middleware('role:admin');
+    Route::get('/beta-feedback/{id}', [\App\Http\Controllers\Api\BetaFeedbackController::class, 'show'])->middleware('role:admin');
+    Route::put('/beta-feedback/{id}', [\App\Http\Controllers\Api\BetaFeedbackController::class, 'update'])->middleware('role:admin');
 });

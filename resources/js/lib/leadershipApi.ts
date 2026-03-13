@@ -1,14 +1,6 @@
 import api from './api';
 import { Leadership, LeadershipFormData } from '../components/leadership/LeadershipForm';
-
-/**
- * API response interface
- */
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-}
+import { ApiResponse } from './types';
 
 /**
  * Leadership API Client

@@ -18,6 +18,7 @@ describe('LeadershipForm', () => {
     photo_url: 'https://example.com/photo.jpg',
     bio: 'A dedicated pastor',
     start_date: '2020-01-15',
+    ministry_teams: 'Worship, Youth Ministry',
   };
 
   beforeEach(() => {
@@ -73,6 +74,7 @@ describe('LeadershipForm', () => {
       expect(screen.getByLabelText(/Phone/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Start Date/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Bio/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Ministry Teams/i)).toBeInTheDocument();
     });
 
     it('should render photo upload section', () => {
@@ -123,6 +125,15 @@ describe('LeadershipForm', () => {
         />
       );
 
+      // Fill in all required fields except email with valid values
+      fireEvent.change(screen.getByLabelText(/First Name/i), { target: { value: 'John' } });
+      fireEvent.change(screen.getByLabelText(/Last Name/i), { target: { value: 'Doe' } });
+      fireEvent.change(screen.getByLabelText(/Role/i), { target: { value: 'Pastor' } });
+      fireEvent.change(screen.getByLabelText(/Department/i), { target: { value: 'Ministry' } });
+      fireEvent.change(screen.getByLabelText(/Phone/i), { target: { value: '123-456-7890' } });
+      fireEvent.change(screen.getByLabelText(/Start Date/i), { target: { value: '2020-01-15' } });
+      
+      // Fill in email with invalid format
       const emailInput = screen.getByLabelText(/Email/i);
       fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
 

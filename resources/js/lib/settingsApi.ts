@@ -1,4 +1,5 @@
 import api from './api';
+import { ApiResponse } from './types';
 
 /**
  * Church settings data interface
@@ -61,16 +62,6 @@ export interface ProfileUpdateData {
   name: string;
   email: string;
   password?: string;
-}
-
-/**
- * API response interface
- */
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-  errors?: Record<string, string[]>;
 }
 
 /**

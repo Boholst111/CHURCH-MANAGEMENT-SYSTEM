@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { dashboardApi } from '../lib/dashboardApi';
-import { DashboardStats, AttendanceData, Activity } from '../lib/types';
+import { DashboardStats, AttendanceData, Activity, UpcomingEvent } from '../lib/types';
 
 interface UseDashboardDataReturn {
   stats: DashboardStats | null;
   attendance: AttendanceData[];
   activities: Activity[];
+  upcomingEvents: UpcomingEvent[];
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -19,6 +20,7 @@ export const useDashboardData = (activityLimit: number = 10): UseDashboardDataRe
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [attendance, setAttendance] = useState<AttendanceData[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,15 +33,17 @@ export const useDashboardData = (activityLimit: number = 10): UseDashboardDataRe
       setError(null);
 
       // Fetch all data in parallel
-      const [statsData, attendanceData, activitiesData] = await Promise.all([
+      const [statsData, attendanceData, activitiesData, eventsData] = await Promise.all([
         dashboardApi.getStats(),
         dashboardApi.getAttendance(),
         dashboardApi.getActivities(activityLimit),
+        dashboardApi.getUpcomingEvents(5),
       ]);
 
       setStats(statsData);
       setAttendance(attendanceData);
       setActivities(activitiesData);
+      setUpcomingEvents(eventsData);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data';
       setError(errorMessage);
@@ -72,6 +76,7 @@ export const useDashboardData = (activityLimit: number = 10): UseDashboardDataRe
     stats,
     attendance,
     activities,
+    upcomingEvents,
     loading,
     error,
     refetch: fetchDashboardData,

@@ -1,31 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, MapPin, Clock, Users, Edit, CheckCircle } from 'lucide-react';
+import { Plus, Calendar, MapPin, Clock, Users, Edit, CheckCircle, Grid, List, LayoutGrid, Eye } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
+import { Select } from '../components/ui/select';
+import { SkeletonCard } from '../components/ui/skeleton';
 import { eventApi, type Event } from '../lib/eventApi';
 import EventForm, { EventFormData } from '../components/events/EventForm';
 import CompleteEventDialog from '../components/events/CompleteEventDialog';
 import ArchiveButton from '../components/archive/ArchiveButton';
+import CalendarView from '../components/events/CalendarView';
 
 /**
  * Events Page Component
  * 
  * Displays a list of upcoming and past church events with management capabilities.
+ * Implements the Events Page Design from the Modern UI/UX Redesign spec.
+ * 
+ * Layout Structure:
+ * - Page header with "Create Event" and "Calendar View" buttons
+ * - Filter bar with Time Range, Category, and Status filters
+ * - View mode toggle (List / Calendar / Grid)
+ * - Event cards in selected view mode
  * 
  * Features:
  * - Display list of upcoming events (sorted chronologically)
  * - Display list of past events
+ * - Filter events by time range, category, and status
+ * - Toggle between List, Calendar, and Grid views
  * - Add Event button for creating new events (admin only)
  * - View event details
  * - Responsive layout
  * 
+ * Design Reference: Events Page Design section
  * Validates Requirements: 9.1, 9.2
+ * Task: 12.1 Create Events page layout
  */
 const Events: React.FC = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const isAdmin = user?.role === 'admin';
 
   // State management
@@ -35,6 +51,12 @@ const Events: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
   const [eventToComplete, setEventToComplete] = useState<Event | null>(null);
+  
+  // Filter and view state
+  const [timeRangeFilter, setTimeRangeFilter] = useState<'upcoming' | 'past' | 'all'>('upcoming');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'grid'>('grid');
 
   /**
    * Load events on mount
@@ -73,6 +95,13 @@ const Events: React.FC = () => {
   const handleEditClick = (event: Event) => {
     setSelectedEvent(event);
     setIsFormOpen(true);
+  };
+
+  /**
+   * Handle view details button click
+   */
+  const handleViewDetails = (event: Event) => {
+    navigate(`/events/${event.id}`);
   };
 
   /**
@@ -155,26 +184,46 @@ const Events: React.FC = () => {
   };
 
   /**
-   * Separate events into upcoming and past
+   * Separate events into upcoming and past, then apply filters
    */
   const now = new Date();
   now.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
   
-  const upcomingEvents = events
-    .filter(event => {
+  // First, separate by time
+  let filteredEvents = events;
+  
+  // Apply time range filter
+  if (timeRangeFilter === 'upcoming') {
+    filteredEvents = events.filter(event => {
       const eventDate = new Date(event.event_date);
       eventDate.setHours(0, 0, 0, 0);
       return eventDate >= now && event.status === 'upcoming';
-    })
-    .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
-  
-  const pastEvents = events
-    .filter(event => {
+    });
+  } else if (timeRangeFilter === 'past') {
+    filteredEvents = events.filter(event => {
       const eventDate = new Date(event.event_date);
       eventDate.setHours(0, 0, 0, 0);
       return eventDate < now || event.status === 'completed';
-    })
-    .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime());
+    });
+  }
+  
+  // Apply category filter (placeholder - categories not yet in data model)
+  if (categoryFilter !== 'all') {
+    // TODO: Filter by category when category field is added to Event model
+    // filteredEvents = filteredEvents.filter(event => event.category === categoryFilter);
+  }
+  
+  // Apply status filter
+  if (statusFilter !== 'all') {
+    filteredEvents = filteredEvents.filter(event => event.status === statusFilter);
+  }
+  
+  // Sort events
+  const sortedEvents = [...filteredEvents].sort((a, b) => {
+    const dateA = new Date(a.event_date).getTime();
+    const dateB = new Date(b.event_date).getTime();
+    return timeRangeFilter === 'past' ? dateB - dateA : dateA - dateB;
+  });
 
   /**
    * Format date for display
@@ -209,11 +258,11 @@ const Events: React.FC = () => {
       {/* Event Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+          <h3 className="text-lg font-semibold text-neutral-900 mb-1">
             {event.title}
           </h3>
           {event.status === 'completed' && event.attendance_count !== null && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2 text-sm text-neutral-600">
               <Users className="h-4 w-4" />
               <span>{event.attendance_count} attendees</span>
             </div>
@@ -221,13 +270,18 @@ const Events: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           {event.status === 'completed' && (
-            <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
+            <span className="bg-success-100 text-success-800 text-xs font-medium px-2.5 py-0.5 rounded">
               Completed
             </span>
           )}
           {event.status === 'cancelled' && (
-            <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">
+            <span className="bg-error-100 text-error-800 text-xs font-medium px-2.5 py-0.5 rounded">
               Cancelled
+            </span>
+          )}
+          {event.status === 'upcoming' && (
+            <span className="bg-primary-100 text-primary-800 text-xs font-medium px-2.5 py-0.5 rounded">
+              Upcoming
             </span>
           )}
         </div>
@@ -235,22 +289,22 @@ const Events: React.FC = () => {
 
       {/* Event Description */}
       {event.description && (
-        <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+        <p className="text-sm text-neutral-600 mb-4 line-clamp-2">
           {event.description}
         </p>
       )}
 
       {/* Event Details */}
       <div className="space-y-2 text-sm mb-4">
-        <div className="flex items-center text-gray-600">
+        <div className="flex items-center text-neutral-600">
           <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
           <span>{formatDate(event.event_date)}</span>
         </div>
-        <div className="flex items-center text-gray-600">
+        <div className="flex items-center text-neutral-600">
           <Clock className="h-4 w-4 mr-2 flex-shrink-0" />
           <span>{formatTime(event.event_time)}</span>
         </div>
-        <div className="flex items-center text-gray-600">
+        <div className="flex items-center text-neutral-600">
           <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
           <span>{event.location}</span>
         </div>
@@ -258,13 +312,21 @@ const Events: React.FC = () => {
 
       {/* Action Buttons (Admin Only) */}
       {isAdmin && (
-        <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
+        <div className="flex items-center gap-2 pt-4 border-t border-neutral-200">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleViewDetails(event)}
+            className="flex-1"
+          >
+            <Eye className="h-4 w-4 mr-1" />
+            View
+          </Button>
           {event.status === 'upcoming' && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => handleCompleteClick(event)}
-              className="flex-1"
             >
               <CheckCircle className="h-4 w-4 mr-1" />
               Complete
@@ -293,7 +355,7 @@ const Events: React.FC = () => {
   );
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Event Form Dialog */}
       <EventForm
         isOpen={isFormOpen}
@@ -314,65 +376,195 @@ const Events: React.FC = () => {
         eventTitle={eventToComplete?.title || ''}
       />
 
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Events</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Manage church events and track attendance
+          <h1 className="text-3xl font-bold text-neutral-900">Events</h1>
+          <p className="text-base text-neutral-600 mt-2">
+            Manage church events and activities
           </p>
         </div>
-        {isAdmin && (
-          <Button onClick={handleAddClick} className="w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Event
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={() => setViewMode('calendar')} 
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            <span className="hidden sm:inline">Calendar View</span>
           </Button>
-        )}
+          {isAdmin && (
+            <Button onClick={handleAddClick} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Create Event</span>
+              <span className="sm:hidden">Create</span>
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Filter Bar */}
+      <Card className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Time Range Filter */}
+          <div>
+            <Select
+              value={timeRangeFilter}
+              onChange={(value) => setTimeRangeFilter(value as 'upcoming' | 'past' | 'all')}
+              options={[
+                { value: 'upcoming', label: 'Upcoming' },
+                { value: 'past', label: 'Past' },
+                { value: 'all', label: 'All' },
+              ]}
+            />
+          </div>
+
+          {/* Category Filter */}
+          <div>
+            <Select
+              value={categoryFilter}
+              onChange={(value) => setCategoryFilter(Array.isArray(value) ? value[0] ?? '' : value)}
+              options={[
+                { value: 'all', label: 'All Categories' },
+                { value: 'worship', label: 'Worship' },
+                { value: 'outreach', label: 'Outreach' },
+                { value: 'fellowship', label: 'Fellowship' },
+                { value: 'training', label: 'Training' },
+              ]}
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <Select
+              value={statusFilter}
+              onChange={(value) => setStatusFilter(Array.isArray(value) ? value[0] ?? '' : value)}
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'upcoming', label: 'Upcoming' },
+                { value: 'completed', label: 'Completed' },
+                { value: 'cancelled', label: 'Cancelled' },
+              ]}
+            />
+          </div>
+        </div>
+      </Card>
+
+      {/* View Mode Toggle */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 bg-neutral-100 p-1 rounded-lg">
+          <button
+            onClick={() => setViewMode('list')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
+              viewMode === 'list'
+                ? 'bg-white text-primary-600 shadow-sm font-medium'
+                : 'text-neutral-600 hover:text-neutral-900'
+            }`}
+            title="List View"
+          >
+            <List className="h-4 w-4" />
+            <span className="text-sm hidden sm:inline">List</span>
+          </button>
+          <button
+            onClick={() => setViewMode('calendar')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
+              viewMode === 'calendar'
+                ? 'bg-white text-primary-600 shadow-sm font-medium'
+                : 'text-neutral-600 hover:text-neutral-900'
+            }`}
+            title="Calendar View"
+          >
+            <Calendar className="h-4 w-4" />
+            <span className="text-sm hidden sm:inline">Calendar</span>
+          </button>
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
+              viewMode === 'grid'
+                ? 'bg-white text-primary-600 shadow-sm font-medium'
+                : 'text-neutral-600 hover:text-neutral-900'
+            }`}
+            title="Grid View"
+          >
+            <LayoutGrid className="h-4 w-4" />
+            <span className="text-sm hidden sm:inline">Grid</span>
+          </button>
+        </div>
+        
+        {/* Event count */}
+        <div className="text-sm text-neutral-600">
+          {sortedEvents.length} {sortedEvents.length === 1 ? 'event' : 'events'}
+        </div>
       </div>
 
       {/* Loading State */}
       {isLoading && (
-        <div className="text-center py-12">
-          <p className="text-gray-600">Loading events...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <SkeletonCard key={index} hasImage={false} />
+          ))}
         </div>
       )}
 
       {/* Empty State */}
-      {!isLoading && events.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-600">
-            No events yet. {isAdmin && 'Click "Add Event" to create one.'}
+      {!isLoading && sortedEvents.length === 0 && (
+        <Card className="text-center py-16">
+          <Calendar className="h-16 w-16 text-neutral-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-neutral-900 mb-2">No Events Found</h3>
+          <p className="text-neutral-600 mb-6">
+            {isAdmin 
+              ? 'Get started by creating your first event.' 
+              : 'Check back later for upcoming events.'}
           </p>
+          {isAdmin && (
+            <Button onClick={handleAddClick}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Event
+            </Button>
+          )}
+        </Card>
+      )}
+
+      {/* Events Content - Grid View */}
+      {!isLoading && sortedEvents.length > 0 && viewMode === 'grid' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {sortedEvents.map(event => {
+            const eventDate = new Date(event.event_date);
+            eventDate.setHours(0, 0, 0, 0);
+            const isPast = eventDate < now || event.status === 'completed';
+            return renderEventCard(event, isPast);
+          })}
         </div>
       )}
 
-      {/* Events Content */}
-      {!isLoading && events.length > 0 && (
-        <div className="space-y-8">
-          {/* Upcoming Events Section */}
-          {upcomingEvents.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Upcoming Events
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {upcomingEvents.map(event => renderEventCard(event))}
-              </div>
-            </div>
-          )}
-
-          {/* Past Events Section */}
-          {pastEvents.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Past Events
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {pastEvents.map(event => renderEventCard(event, true))}
-              </div>
-            </div>
-          )}
+      {/* Events Content - List View */}
+      {!isLoading && sortedEvents.length > 0 && viewMode === 'list' && (
+        <div className="space-y-4">
+          {sortedEvents.map(event => {
+            const eventDate = new Date(event.event_date);
+            eventDate.setHours(0, 0, 0, 0);
+            const isPast = eventDate < now || event.status === 'completed';
+            return renderEventCard(event, isPast);
+          })}
         </div>
+      )}
+
+      {/* Events Content - Calendar View */}
+      {!isLoading && viewMode === 'calendar' && (
+        <CalendarView
+          events={events}
+          onDayClick={(date, dayEvents) => {
+            // Show events for the selected day
+            console.log('Day clicked:', date, 'Events:', dayEvents);
+            // TODO: Could open a modal or filter to show only these events
+          }}
+          onEventClick={(event) => {
+            // Handle event click - could open event details or edit
+            if (isAdmin) {
+              handleEditClick(event);
+            }
+          }}
+        />
       )}
     </div>
   );

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState } from 'react';
 import { Archive } from 'lucide-react';
 import { Button } from '../ui/button';

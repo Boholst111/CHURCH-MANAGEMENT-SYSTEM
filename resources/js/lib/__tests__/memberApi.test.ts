@@ -37,11 +37,22 @@ describe('memberApi', () => {
         date_joined: '2024-01-01',
         birth_date: '1990-01-01',
         gender: 'male',
+        membership_type: 'regular',
       };
 
       const createdMember: Member = {
         id: 1,
-        ...formData,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        status: formData.status,
+        small_group_id: formData.small_group_id,
+        date_joined: formData.date_joined,
+        birth_date: formData.birth_date,
+        gender: formData.gender,
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-01T00:00:00Z',
       };
@@ -70,8 +81,9 @@ describe('memberApi', () => {
         status: 'active',
         small_group_id: null,
         date_joined: '2024-01-01',
-        birth_date: '',
+        birth_date: null,
         gender: 'male',
+        membership_type: 'regular',
       };
 
       const error = {
@@ -107,11 +119,22 @@ describe('memberApi', () => {
         date_joined: '2024-01-01',
         birth_date: '1990-01-01',
         gender: 'male',
+        membership_type: 'regular',
       };
 
       const updatedMember: Member = {
         id: memberId,
-        ...formData,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        status: formData.status,
+        small_group_id: formData.small_group_id,
+        date_joined: formData.date_joined,
+        birth_date: formData.birth_date,
+        gender: formData.gender,
         created_at: '2024-01-01T00:00:00Z',
         updated_at: '2024-01-15T00:00:00Z',
       };
@@ -141,8 +164,9 @@ describe('memberApi', () => {
         status: 'active',
         small_group_id: null,
         date_joined: '2024-01-01',
-        birth_date: '',
+        birth_date: null,
         gender: 'male',
+        membership_type: 'regular',
       };
 
       const error = {

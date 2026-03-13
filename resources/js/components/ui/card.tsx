@@ -1,20 +1,76 @@
 import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "../../lib/utils"
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
-      className
-    )}
-    {...props}
-  />
-))
+const cardVariants = cva(
+  "rounded-lg bg-white text-neutral-900 transition-all duration-300",
+  {
+    variants: {
+      variant: {
+        default: "border border-neutral-200 shadow-sm",
+        bordered: "border-2 border-neutral-300 shadow-none",
+        elevated: "border-transparent shadow-lg",
+      },
+      padding: {
+        none: "p-0",
+        sm: "p-4",
+        md: "p-6",
+        lg: "p-8",
+      },
+      hoverable: {
+        true: "hover:shadow-xl hover:scale-[1.02] cursor-pointer",
+        false: "",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      padding: "md",
+      hoverable: false,
+    },
+  }
+)
+
+export interface CardProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof cardVariants> {
+  title?: string
+  description?: string
+  footer?: React.ReactNode
+}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, variant, padding, hoverable, title, description, footer, children, ...props }, ref) => {
+    // If using title/description/footer props, override padding to none and handle internally
+    const hasStructuredContent = title || description || footer
+    const effectivePadding = hasStructuredContent ? "none" : padding
+
+    return (
+      <div
+        ref={ref}
+        className={cn(cardVariants({ variant, padding: effectivePadding, hoverable }), className)}
+        role={hoverable ? "article" : undefined}
+        aria-label={title ? undefined : "Card"}
+        {...props}
+      >
+        {hasStructuredContent ? (
+          <>
+            {(title || description) && (
+              <CardHeader>
+                {title && <CardTitle>{title}</CardTitle>}
+                {description && <CardDescription>{description}</CardDescription>}
+              </CardHeader>
+            )}
+            {children && <CardContent>{children}</CardContent>}
+            {footer && <CardFooter>{footer}</CardFooter>}
+          </>
+        ) : (
+          children
+        )}
+      </div>
+    )
+  }
+)
 Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<

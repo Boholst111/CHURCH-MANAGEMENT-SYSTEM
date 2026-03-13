@@ -1,11 +1,14 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
-import { Spinner } from './components/ui/spinner';
+import { LoadingFallback } from './components/ui/loading-fallback';
+import { queryClient } from './lib/queryClient';
 import '../css/app.css';
 
 // Lazy load pages for code splitting
@@ -14,7 +17,9 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Members = lazy(() => import('./pages/Members'));
 const Leadership = lazy(() => import('./pages/Leadership'));
 const SmallGroups = lazy(() => import('./pages/SmallGroups'));
+const GroupDetail = lazy(() => import('./pages/GroupDetail'));
 const Events = lazy(() => import('./pages/Events'));
+const EventDetail = lazy(() => import('./pages/EventDetail'));
 const Finance = lazy(() => import('./pages/Finance'));
 const Reports = lazy(() => import('./pages/Reports'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -27,11 +32,7 @@ const AppRoutes: React.FC = () => {
   const { user } = useAuth();
 
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <Spinner size="lg" />
-      </div>
-    }>
+    <Suspense fallback={<LoadingFallback />}>
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
         <Route path="/" element={
@@ -62,10 +63,24 @@ const AppRoutes: React.FC = () => {
             </Layout>
           </ProtectedRoute>
         } />
+        <Route path="/small-groups/:id" element={
+          <ProtectedRoute>
+            <Layout>
+              <GroupDetail />
+            </Layout>
+          </ProtectedRoute>
+        } />
         <Route path="/events" element={
           <ProtectedRoute>
             <Layout>
               <Events />
+            </Layout>
+          </ProtectedRoute>
+        } />
+        <Route path="/events/:id" element={
+          <ProtectedRoute>
+            <Layout>
+              <EventDetail />
             </Layout>
           </ProtectedRoute>
         } />
@@ -127,13 +142,17 @@ const AppRoutes: React.FC = () => {
 const App: React.FC = () => {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <ToastProvider>
-          <Router>
-            <AppRoutes />
-          </Router>
-        </ToastProvider>
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <Router>
+                <AppRoutes />
+              </Router>
+            </ToastProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 };

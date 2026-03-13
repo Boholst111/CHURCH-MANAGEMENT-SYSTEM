@@ -8,10 +8,18 @@ export interface SmallGroup {
   name: string;
   description: string | null;
   leader_name: string;
+  leader_photo?: string | null;
   meeting_day: string;
   meeting_time: string;
   location: string;
   member_count?: number;
+  members?: Array<{
+    id: number;
+    name: string;
+    photo?: string | null;
+  }>;
+  status?: 'active' | 'inactive';
+  image?: string | null;
   created_at: string;
   updated_at: string;
 }

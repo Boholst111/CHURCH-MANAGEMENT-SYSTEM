@@ -11,7 +11,14 @@ import { leadershipApi } from '../lib/leadershipApi';
 /**
  * Leadership Page Component
  * 
- * Displays a grid of leadership profiles with CRUD operations.
+ * Displays church leadership profiles in a modern, responsive grid layout.
+ * Implements the Leadership Page Design from the Modern UI/UX Redesign spec.
+ * 
+ * Layout Structure:
+ * - Page header with title "Leadership" and subtitle
+ * - "Add Leader" button (admin only) in the header
+ * - Organization chart section (placeholder for phase 2)
+ * - Responsive grid layout for leader profile cards (1 col mobile, 2 cols tablet, 3 cols desktop)
  * 
  * Features:
  * - Display leadership profiles in a responsive grid
@@ -20,8 +27,11 @@ import { leadershipApi } from '../lib/leadershipApi';
  * - Delete leadership profiles with confirmation (admin only)
  * - Photo upload support
  * - Toast notifications for success/error feedback
+ * - Loading and empty states
  * 
+ * Design Reference: Leadership Page Design section
  * Validates Requirements: 4.1, 4.2, 4.4, 4.5
+ * Task: 10.1 Create Leadership page layout
  */
 const Leadership: React.FC = () => {
   const { user } = useAuth();
@@ -149,40 +159,65 @@ const Leadership: React.FC = () => {
   };
 
   return (
-    <div>
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+    <div className="space-y-6">
+      {/* Page Header with Title and Action Button */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pastors & Leadership</h1>
-          <p className="text-sm text-gray-600 mt-1">Church leadership and staff directory</p>
+          <h1 className="text-3xl font-bold text-neutral-900">Leadership</h1>
+          <p className="text-base text-neutral-600 mt-2">Church leadership structure and roles</p>
         </div>
         {isAdmin && (
-          <Button onClick={handleAddClick} className="w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Leadership
+          <Button 
+            onClick={handleAddClick} 
+            variant="primary"
+            size="md"
+            className="w-full sm:w-auto"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            Add Leader
           </Button>
         )}
       </div>
 
+      {/* Organization Chart Section - Placeholder for Phase 2 */}
+      {/* This section can be implemented in a future phase with an interactive org chart */}
+
       {/* Loading State */}
       {isLoading && (
-        <div className="text-center py-12">
-          <p className="text-gray-600">Loading leadership profiles...</p>
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-600 border-r-transparent mb-4"></div>
+            <p className="text-neutral-600">Loading leadership profiles...</p>
+          </div>
         </div>
       )}
 
       {/* Empty State */}
       {!isLoading && leadership.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-600">
-            No leadership profiles yet. {isAdmin && 'Click "Add Leadership" to create one.'}
-          </p>
+        <div className="bg-white rounded-xl border border-neutral-200 p-12 text-center">
+          <div className="max-w-md mx-auto">
+            <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Plus className="h-8 w-8 text-neutral-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-neutral-900 mb-2">No Leadership Profiles</h3>
+            <p className="text-neutral-600 mb-6">
+              {isAdmin 
+                ? 'Get started by adding your first leadership profile to showcase your church leaders.' 
+                : 'No leadership profiles have been added yet.'}
+            </p>
+            {isAdmin && (
+              <Button onClick={handleAddClick} variant="primary" size="md">
+                <Plus className="h-5 w-5 mr-2" />
+                Add First Leader
+              </Button>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Responsive Grid Layout for Profile Cards */}
+      {/* Grid Layout for Leader Cards */}
       {!isLoading && leadership.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {leadership.map((leader) => (
             <ProfileCard
               key={leader.id}

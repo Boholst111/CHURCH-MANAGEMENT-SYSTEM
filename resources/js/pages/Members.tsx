@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Search, UserPlus, Filter, Download } from 'lucide-react';
+import { Search, UserPlus, Upload, Download } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
+import { Select } from '../components/ui/select';
 import MemberTable, { Member } from '../components/members/MemberTable';
+import VirtualMemberTable from '../components/members/VirtualMemberTable';
 import MemberForm, { MemberFormData } from '../components/members/MemberForm';
 import DeleteMemberDialog from '../components/members/DeleteMemberDialog';
 import { memberApi } from '../lib/memberApi';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useVirtualScrolling } from '../hooks/useVirtualScrolling';
+import { useDebounce } from '../hooks/useDebounce';
 import api from '../lib/api';
 
 /**
@@ -34,8 +38,9 @@ interface SmallGroup {
  */
 const Members: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'visitor'>('all');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'archived'>('all');
+  const [membershipTypeFilter, setMembershipTypeFilter] = useState<string>('all');
   const [smallGroupFilter, setSmallGroupFilter] = useState<string>('all');
   const [smallGroups, setSmallGroups] = useState<SmallGroup[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -61,16 +66,8 @@ const Members: React.FC = () => {
   // Check if user can modify data (not readonly)
   const canModify = user?.role !== 'readonly';
 
-  /**
-   * Debounce search query (300ms delay)
-   */
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  // Determine if we should use virtual scrolling (>100 items)
+  const shouldUseVirtualScrolling = useVirtualScrolling(members.length);
 
   /**
    * Fetch small groups for filter dropdown
@@ -110,6 +107,10 @@ const Members: React.FC = () => {
         params.append('status', statusFilter);
       }
 
+      if (membershipTypeFilter !== 'all') {
+        params.append('membership_type', membershipTypeFilter);
+      }
+
       if (smallGroupFilter !== 'all') {
         params.append('small_group_id', smallGroupFilter);
       }
@@ -133,14 +134,14 @@ const Members: React.FC = () => {
    */
   useEffect(() => {
     fetchMembers();
-  }, [currentPage, debouncedSearchQuery, statusFilter, smallGroupFilter]);
+  }, [currentPage, debouncedSearchQuery, statusFilter, membershipTypeFilter, smallGroupFilter]);
 
   /**
    * Reset to page 1 when filters change
    */
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchQuery, statusFilter, smallGroupFilter]);
+  }, [debouncedSearchQuery, statusFilter, membershipTypeFilter, smallGroupFilter]);
 
   const handleAddMember = () => {
     setEditingMember(null);
@@ -229,6 +230,10 @@ const Members: React.FC = () => {
         params.append('status', statusFilter);
       }
 
+      if (membershipTypeFilter !== 'all') {
+        params.append('membership_type', membershipTypeFilter);
+      }
+
       if (smallGroupFilter !== 'all') {
         params.append('small_group_id', smallGroupFilter);
       }
@@ -264,91 +269,138 @@ const Members: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Member Directory</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Manage and view all church members and visitors
+          <h1 className="text-2xl font-bold text-neutral-900">Members</h1>
+          <p className="text-sm text-neutral-600 mt-1">
+            Manage church members and their information
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button 
-            onClick={handleExport} 
-            disabled={isExporting}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export CSV'}</span>
-            <span className="sm:hidden">{isExporting ? 'Exporting...' : 'Export'}</span>
-          </Button>
           {canModify && (
-            <Button onClick={handleAddMember} className="flex items-center gap-2">
-              <UserPlus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add Member</span>
-              <span className="sm:hidden">Add</span>
+            <>
+              <Button 
+                onClick={handleExport} 
+                disabled={isExporting}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
+              </Button>
+              <Button 
+                onClick={() => {/* TODO: Implement import */}} 
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                <span className="hidden sm:inline">Import</span>
+              </Button>
+              <Button onClick={handleAddMember} className="flex items-center gap-2">
+                <UserPlus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add Member</span>
+                <span className="sm:hidden">Add</span>
+              </Button>
+            </>
+          )}
+          {!canModify && (
+            <Button 
+              onClick={handleExport} 
+              disabled={isExporting}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
             </Button>
           )}
         </div>
       </div>
 
-      {/* Search and Filter Controls */}
+      {/* Filter Bar */}
       <Card className="p-6">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search Input */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <div className="lg:col-span-2">
             <Input
               type="text"
-              placeholder="Search by name, email, or phone..."
+              placeholder="Search members..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              icon={<Search className="h-4 w-4" />}
+              iconPosition="left"
             />
           </div>
 
           {/* Status Filter */}
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-gray-400" />
-            <select
+          <div>
+            <Select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'visitor')}
-              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <option value="all">All Members</option>
-              <option value="active">Active Members</option>
-              <option value="visitor">Visitors</option>
-            </select>
+              onChange={(value) => setStatusFilter(value as 'all' | 'active' | 'inactive' | 'archived')}
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' },
+                { value: 'archived', label: 'Archived' },
+              ]}
+            />
+          </div>
+
+          {/* Membership Type Filter */}
+          <div>
+            <Select
+              value={membershipTypeFilter}
+              onChange={(value) => setMembershipTypeFilter(Array.isArray(value) ? value[0] : value)}
+              options={[
+                { value: 'all', label: 'All Types' },
+                { value: 'regular', label: 'Regular' },
+                { value: 'associate', label: 'Associate' },
+                { value: 'visitor', label: 'Visitor' },
+              ]}
+            />
           </div>
 
           {/* Small Group Filter */}
-          <div className="flex items-center gap-2">
-            <select
+          <div className="lg:col-span-4">
+            <Select
               value={smallGroupFilter}
-              onChange={(e) => setSmallGroupFilter(e.target.value)}
-              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <option value="all">All Small Groups</option>
-              {smallGroups.map((group) => (
-                <option key={group.id} value={group.id.toString()}>
-                  {group.name}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setSmallGroupFilter(Array.isArray(value) ? value[0] : value)}
+              options={[
+                { value: 'all', label: 'All Small Groups' },
+                ...smallGroups.map((group) => ({
+                  value: group.id.toString(),
+                  label: group.name,
+                })),
+              ]}
+            />
           </div>
         </div>
       </Card>
 
       {/* Member Table */}
       <Card className="p-6">
-        <MemberTable
-          members={members}
-          onEdit={canModify ? handleEditMember : undefined}
-          onDelete={canModify ? handleDeleteMember : undefined}
-          onArchiveSuccess={fetchMembers}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-          isLoading={isLoading}
-        />
+        {shouldUseVirtualScrolling ? (
+          <VirtualMemberTable
+            members={members}
+            onEdit={canModify ? handleEditMember : undefined}
+            onDelete={canModify ? handleDeleteMember : undefined}
+            onArchiveSuccess={fetchMembers}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            isLoading={isLoading}
+            height={600}
+          />
+        ) : (
+          <MemberTable
+            members={members}
+            onEdit={canModify ? handleEditMember : undefined}
+            onDelete={canModify ? handleDeleteMember : undefined}
+            onArchiveSuccess={fetchMembers}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            isLoading={isLoading}
+          />
+        )}
       </Card>
 
       {/* Member Form Modal */}

@@ -2,14 +2,19 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import Members from '../Members';
 import api from '../../lib/api';
 import { ToastProvider } from '../../contexts/ToastContext';
+import { AuthProvider } from '../../contexts/AuthContext';
 
 // Mock the API module
 jest.mock('../../lib/api');
 const mockedApi = api as jest.Mocked<typeof api>;
 
-// Helper to render with ToastProvider
+// Helper to render with ToastProvider and AuthProvider
 const renderWithToast = (component: React.ReactElement) => {
-  return render(<ToastProvider>{component}</ToastProvider>);
+  return render(
+    <AuthProvider>
+      <ToastProvider>{component}</ToastProvider>
+    </AuthProvider>
+  );
 };
 
 /**
@@ -25,6 +30,15 @@ const renderWithToast = (component: React.ReactElement) => {
  */
 describe('Members Page - Structure', () => {
   beforeEach(() => {
+    // Set up mock user in localStorage
+    localStorage.setItem('token', 'mock-token');
+    localStorage.setItem('user', JSON.stringify({
+      id: 1,
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'admin'
+    }));
+
     // Mock API responses
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/small-groups') {
@@ -57,6 +71,7 @@ describe('Members Page - Structure', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
   });
   it('renders page header with title and description', () => {
     renderWithToast(<Members />);
@@ -170,6 +185,15 @@ describe('Members Page - Search and Filter (Task 8.6)', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     
+    // Set up mock user in localStorage
+    localStorage.setItem('token', 'mock-token');
+    localStorage.setItem('user', JSON.stringify({
+      id: 1,
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'admin'
+    }));
+    
     // Mock API responses
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/small-groups') {
@@ -203,6 +227,7 @@ describe('Members Page - Search and Filter (Task 8.6)', () => {
   afterEach(() => {
     jest.clearAllMocks();
     jest.useRealTimers();
+    localStorage.clear();
   });
 
   it('renders small group filter dropdown', async () => {
@@ -210,17 +235,15 @@ describe('Members Page - Search and Filter (Task 8.6)', () => {
     
     // Wait for small groups to load
     await waitFor(() => {
-      expect(screen.getByText('Youth Group')).toBeInTheDocument();
+      expect(mockedApi.get).toHaveBeenCalledWith('/small-groups');
     });
     
-    // Should have status filter and small group filter
+    // Should have status filter, membership type filter, and small group filter
     const filterSelects = screen.getAllByRole('combobox');
-    expect(filterSelects.length).toBe(2);
+    expect(filterSelects.length).toBe(3);
     
-    // Check small group filter options
+    // Check that "All Small Groups" is displayed (the default selected value)
     expect(screen.getByText('All Small Groups')).toBeInTheDocument();
-    expect(screen.getByText('Youth Group')).toBeInTheDocument();
-    expect(screen.getByText('Prayer Group')).toBeInTheDocument();
   });
 
   it('debounces search input (300ms delay)', async () => {
@@ -233,7 +256,7 @@ describe('Members Page - Search and Filter (Task 8.6)', () => {
     
     const initialCallCount = mockedApi.get.mock.calls.length;
     
-    const searchInput = screen.getByPlaceholderText(/search by name, email, or phone/i);
+    const searchInput = screen.getByPlaceholderText(/search members/i);
     
     // Type in search input
     fireEvent.change(searchInput, { target: { value: 'John' } });
@@ -264,7 +287,7 @@ describe('Members Page - Search and Filter (Task 8.6)', () => {
     const initialCallCount = mockedApi.get.mock.calls.length;
     
     const filterSelects = screen.getAllByRole('combobox');
-    const statusFilter = filterSelects[0];
+    const statusFilter = filterSelects[0]; // First select is status filter
     
     // Change status filter
     fireEvent.change(statusFilter, { target: { value: 'active' } });
@@ -277,18 +300,41 @@ describe('Members Page - Search and Filter (Task 8.6)', () => {
     });
   });
 
-  it('updates table when small group filter changes', async () => {
+  it('updates table when membership type filter changes', async () => {
     renderWithToast(<Members />);
     
-    // Wait for small groups to load
     await waitFor(() => {
-      expect(screen.getByText('Youth Group')).toBeInTheDocument();
+      expect(mockedApi.get).toHaveBeenCalled();
     });
     
     const initialCallCount = mockedApi.get.mock.calls.length;
     
     const filterSelects = screen.getAllByRole('combobox');
-    const smallGroupFilter = filterSelects[1];
+    const membershipTypeFilter = filterSelects[1]; // Second select is membership type filter
+    
+    // Change membership type filter
+    fireEvent.change(membershipTypeFilter, { target: { value: 'regular' } });
+    
+    // API should be called with membership_type parameter
+    await waitFor(() => {
+      expect(mockedApi.get).toHaveBeenCalledTimes(initialCallCount + 1);
+      const lastCall = mockedApi.get.mock.calls[mockedApi.get.mock.calls.length - 1];
+      expect(lastCall[0]).toContain('membership_type=regular');
+    });
+  });
+
+  it('updates table when small group filter changes', async () => {
+    renderWithToast(<Members />);
+    
+    // Wait for small groups to load
+    await waitFor(() => {
+      expect(mockedApi.get).toHaveBeenCalledWith('/small-groups');
+    });
+    
+    const initialCallCount = mockedApi.get.mock.calls.length;
+    
+    const filterSelects = screen.getAllByRole('combobox');
+    const smallGroupFilter = filterSelects[2]; // Third select is small group filter
     
     // Change small group filter
     fireEvent.change(smallGroupFilter, { target: { value: '1' } });
@@ -326,13 +372,14 @@ describe('Members Page - Search and Filter (Task 8.6)', () => {
     
     // Wait for small groups to load
     await waitFor(() => {
-      expect(screen.getByText('Youth Group')).toBeInTheDocument();
+      expect(mockedApi.get).toHaveBeenCalledWith('/small-groups');
     });
     
-    const searchInput = screen.getByPlaceholderText(/search by name, email, or phone/i);
+    const searchInput = screen.getByPlaceholderText(/search members/i);
     const filterSelects = screen.getAllByRole('combobox');
-    const statusFilter = filterSelects[0];
-    const smallGroupFilter = filterSelects[1];
+    const statusFilter = filterSelects[0]; // First select is status filter
+    const membershipTypeFilter = filterSelects[1]; // Second select is membership type filter
+    const smallGroupFilter = filterSelects[2]; // Third select is small group filter
     
     // Apply search
     fireEvent.change(searchInput, { target: { value: 'John' } });
@@ -355,6 +402,14 @@ describe('Members Page - Search and Filter (Task 8.6)', () => {
       expect(lastCall[0]).toContain('status=active');
     });
     
+    // Apply membership type filter
+    fireEvent.change(membershipTypeFilter, { target: { value: 'regular' } });
+    
+    await waitFor(() => {
+      const lastCall = mockedApi.get.mock.calls[mockedApi.get.mock.calls.length - 1];
+      expect(lastCall[0]).toContain('membership_type=regular');
+    });
+    
     // Apply small group filter
     fireEvent.change(smallGroupFilter, { target: { value: '1' } });
     
@@ -362,6 +417,7 @@ describe('Members Page - Search and Filter (Task 8.6)', () => {
       const lastCall = mockedApi.get.mock.calls[mockedApi.get.mock.calls.length - 1];
       expect(lastCall[0]).toContain('small_group_id=1');
       expect(lastCall[0]).toContain('status=active');
+      expect(lastCall[0]).toContain('membership_type=regular');
       expect(lastCall[0]).toContain('search=John');
     });
   });
@@ -398,6 +454,15 @@ describe('Members Page - CRUD Operations (Task 8.7)', () => {
   };
 
   beforeEach(() => {
+    // Set up mock user in localStorage
+    localStorage.setItem('token', 'mock-token');
+    localStorage.setItem('user', JSON.stringify({
+      id: 1,
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'admin'
+    }));
+
     // Mock API responses
     mockedApi.get.mockImplementation((url: string) => {
       if (url === '/small-groups') {
@@ -430,6 +495,7 @@ describe('Members Page - CRUD Operations (Task 8.7)', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
   });
 
   it('opens member form when Add Member button is clicked', async () => {

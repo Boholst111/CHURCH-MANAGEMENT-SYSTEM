@@ -24,6 +24,16 @@ export interface ApiErrorResponse {
  * @returns User-friendly error message
  */
 export const getErrorMessage = (error: any, defaultMessage: string = 'An error occurred'): string => {
+  // Check for custom user message set by interceptor
+  if (error.userMessage) {
+    return error.userMessage;
+  }
+
+  // Check if offline
+  if (error.isOffline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    return 'You are offline. Please check your internet connection.';
+  }
+
   // Check if error has a response (axios error)
   if (error.response?.data) {
     const data: ApiErrorResponse = error.response.data;
@@ -45,11 +55,14 @@ export const getErrorMessage = (error: any, defaultMessage: string = 'An error o
   // Check if error has a message property
   if (error.message) {
     // Convert technical error messages to user-friendly ones
-    if (error.message.includes('Network Error')) {
+    if (error.message.includes('Network Error') || error.message.includes('ERR_NETWORK')) {
       return 'Unable to connect to the server. Please check your internet connection.';
     }
     if (error.message.includes('timeout')) {
       return 'The request took too long. Please try again.';
+    }
+    if (error.message.includes('ECONNREFUSED')) {
+      return 'Unable to connect to the server. The server may be down.';
     }
     return error.message;
   }
@@ -157,4 +170,33 @@ export const formatErrorForLogging = (error: any, context?: string): object => {
     stack: error.stack,
     timestamp: new Date().toISOString(),
   };
+};
+
+/**
+ * Check if error is a network error (no response from server)
+ * 
+ * @param error - The error object from API call
+ * @returns True if error is a network error
+ */
+export const isNetworkError = (error: any): boolean => {
+  return !error.response || error.isOffline || error.code === 'ERR_NETWORK';
+};
+
+/**
+ * Check if error is retryable (server error or network error)
+ * 
+ * @param error - The error object from API call
+ * @returns True if error is retryable
+ */
+export const isRetryableError = (error: any): boolean => {
+  return error.isRetryable || isServerError(error) || isNetworkError(error);
+};
+
+/**
+ * Check if user is offline
+ * 
+ * @returns True if user is offline
+ */
+export const isOffline = (): boolean => {
+  return typeof navigator !== 'undefined' && !navigator.onLine;
 };

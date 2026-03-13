@@ -1,4 +1,5 @@
 import api from './api';
+import { ApiResponse } from './types';
 
 /**
  * User interface
@@ -19,16 +20,28 @@ export interface UserFormData {
   name: string;
   email: string;
   password?: string;
-  role: 'admin' | 'staff' | 'readonly';
+  role: 'admin' | 'pastor' | 'staff' | 'volunteer' | 'readonly';
 }
 
 /**
- * API response interface
+ * User invitation interface
  */
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
+export interface UserInvitation {
+  id: number;
+  email: string;
+  role: 'admin' | 'pastor' | 'staff' | 'volunteer' | 'readonly';
+  status: 'pending' | 'accepted' | 'expired';
+  invited_by: string;
+  invited_at: string;
+  expires_at: string;
+}
+
+/**
+ * Invite user form data interface
+ */
+export interface InviteUserFormData {
+  email: string;
+  role: 'admin' | 'pastor' | 'staff' | 'volunteer' | 'readonly';
 }
 
 /**
@@ -74,5 +87,36 @@ export const userApi = {
   async getUser(id: number): Promise<User> {
     const response = await api.get<ApiResponse<User>>(`/users/${id}`);
     return response.data.data;
+  },
+
+  /**
+   * Invite a new user
+   */
+  async inviteUser(data: InviteUserFormData): Promise<UserInvitation> {
+    const response = await api.post<ApiResponse<UserInvitation>>('/users/invite', data);
+    return response.data.data;
+  },
+
+  /**
+   * Get all pending invitations
+   */
+  async getInvitations(): Promise<UserInvitation[]> {
+    const response = await api.get<ApiResponse<UserInvitation[]>>('/users/invitations');
+    return response.data.data;
+  },
+
+  /**
+   * Resend an invitation
+   */
+  async resendInvitation(id: number): Promise<UserInvitation> {
+    const response = await api.post<ApiResponse<UserInvitation>>(`/users/invitations/${id}/resend`);
+    return response.data.data;
+  },
+
+  /**
+   * Cancel an invitation
+   */
+  async cancelInvitation(id: number): Promise<void> {
+    await api.delete(`/users/invitations/${id}`);
   },
 };

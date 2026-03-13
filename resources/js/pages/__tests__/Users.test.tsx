@@ -33,8 +33,8 @@ describe('Users Page', () => {
     
     renderUsers();
     
-    expect(screen.getByText('User Management')).toBeInTheDocument();
-    expect(screen.getByText('Manage system users and their access roles')).toBeInTheDocument();
+    expect(screen.getByText('Users')).toBeInTheDocument();
+    expect(screen.getByText('Manage system users and permissions')).toBeInTheDocument();
   });
 
   it('should render Add User button', () => {
@@ -120,7 +120,7 @@ describe('Users Page', () => {
     renderUsers();
     
     await waitFor(() => {
-      expect(screen.getByText('Administrator')).toBeInTheDocument();
+      expect(screen.getByText('Admin')).toBeInTheDocument();
       expect(screen.getByText('Staff')).toBeInTheDocument();
       expect(screen.getByText('Read-Only')).toBeInTheDocument();
     });
@@ -153,11 +153,11 @@ describe('Users Page', () => {
     renderUsers();
     
     await waitFor(() => {
-      expect(screen.getByText('A')).toBeInTheDocument(); // First letter of name
+      expect(screen.getByText('AA')).toBeInTheDocument(); // First and last initials
     });
   });
 
-  it('should format created date correctly', async () => {
+  it('should display last login time', async () => {
     const mockUsers = [
       {
         id: 1,
@@ -174,9 +174,8 @@ describe('Users Page', () => {
     renderUsers();
     
     await waitFor(() => {
-      // Date formatting may vary by locale, so just check that a date is displayed
-      const dateCell = screen.getByText(/1\/15\/2024|15\/1\/2024|2024/);
-      expect(dateCell).toBeInTheDocument();
+      // Should show "Never" when last_login is not available
+      expect(screen.getByText('Never')).toBeInTheDocument();
     });
   });
 

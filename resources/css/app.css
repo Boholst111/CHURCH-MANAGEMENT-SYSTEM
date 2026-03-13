@@ -5,6 +5,46 @@
 /* Import print styles */
 @import './print.css';
 
+/* Import keyboard navigation styles */
+@import './keyboard-navigation.css';
+
+/* Shimmer animation for skeleton loading */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(
+    to right,
+    #f5f5f5 0%,
+    #e5e5e5 20%,
+    #f5f5f5 40%,
+    #f5f5f5 100%
+  );
+  background-size: 1000px 100%;
+}
+
+/* Indeterminate progress animation */
+@keyframes progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+.animate-progress-indeterminate {
+  width: 25%;
+  animation: progress-indeterminate 1.5s ease-in-out infinite;
+}
+
 /* Local font fallback */
 @font-face {
   font-family: 'Inter';
@@ -44,83 +84,94 @@
  
 @layer base {
   :root {
-    /* Tailwind HSL Variables for shadcn/ui compatibility */
+    /* ===== Light Mode Theme Variables ===== */
+    
+    /* Legacy shadcn/ui compatibility (HSL format) */
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
- 
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
- 
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
- 
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
- 
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
- 
-    --primary: 221.2 83.2% 53.3%;
+    --primary: 199 89% 48%;
     --primary-foreground: 210 40% 98%;
- 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
- 
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
- 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
- 
-    --ring: 215 20.2% 65.1%;
- 
+    --ring: 199 89% 48%;
     --radius: 0.5rem;
     
-    /* Primary Colors - Soft Blue Palette */
-    --color-primary-50: #eff6ff;
-    --color-primary-100: #dbeafe;
-    --color-primary-200: #bfdbfe;
-    --color-primary-300: #93c5fd;
-    --color-primary-400: #60a5fa;
-    --color-primary-500: #3b82f6;
-    --color-primary-600: #2563eb;
-    --color-primary-700: #1d4ed8;
+    /* Design System - Primary Colors (Church Identity & Actions) */
+    --color-primary-50: #f0f9ff;
+    --color-primary-100: #e0f2fe;
+    --color-primary-200: #bae6fd;
+    --color-primary-300: #7dd3fc;
+    --color-primary-400: #38bdf8;
+    --color-primary-500: #0ea5e9;
+    --color-primary-600: #0284c7;
+    --color-primary-700: #0369a1;
+    --color-primary-800: #075985;
+    --color-primary-900: #0c4a6e;
     
-    /* Neutral Colors */
-    --color-neutral-50: #f9fafb;
-    --color-neutral-100: #f3f4f6;
-    --color-neutral-200: #e5e7eb;
-    --color-neutral-300: #d1d5db;
-    --color-neutral-500: #6b7280;
-    --color-neutral-700: #374151;
-    --color-neutral-900: #111827;
+    /* Design System - Neutral Colors (Text, Backgrounds, Borders) */
+    --color-neutral-50: #fafafa;
+    --color-neutral-100: #f5f5f5;
+    --color-neutral-200: #e5e5e5;
+    --color-neutral-300: #d4d4d4;
+    --color-neutral-400: #a3a3a3;
+    --color-neutral-500: #737373;
+    --color-neutral-600: #525252;
+    --color-neutral-700: #404040;
+    --color-neutral-800: #262626;
+    --color-neutral-900: #171717;
     
-    /* Semantic Colors */
+    /* Design System - Semantic Colors (Status & Feedback) */
+    --color-success-light: #d1fae5;
     --color-success: #10b981;
-    --color-warning: #f59e0b;
-    --color-error: #ef4444;
+    --color-success-dark: #059669;
     
-    /* Background */
-    --color-background: #ffffff;
-    --color-background-secondary: #f9fafb;
+    --color-warning-light: #fef3c7;
+    --color-warning: #f59e0b;
+    --color-warning-dark: #d97706;
+    
+    --color-error-light: #fee2e2;
+    --color-error: #ef4444;
+    --color-error-dark: #dc2626;
+    
+    --color-info-light: #dbeafe;
+    --color-info: #3b82f6;
+    --color-info-dark: #2563eb;
     
     /* Typography */
-    --font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-family-sans: 'Inter', 'system-ui', '-apple-system', 'sans-serif';
+    --font-family-mono: 'JetBrains Mono', 'Consolas', 'monospace';
     
-    --font-size-xs: 0.75rem;
-    --font-size-sm: 0.875rem;
+    /* Font Sizes */
+    --font-size-display: 3.75rem;
+    --font-size-h1: 2.25rem;
+    --font-size-h2: 1.875rem;
+    --font-size-h3: 1.5rem;
+    --font-size-h4: 1.25rem;
+    --font-size-large: 1.125rem;
     --font-size-base: 1rem;
-    --font-size-lg: 1.125rem;
-    --font-size-xl: 1.25rem;
-    --font-size-2xl: 1.5rem;
-    --font-size-3xl: 1.875rem;
+    --font-size-small: 0.875rem;
+    --font-size-tiny: 0.75rem;
     
+    /* Font Weights */
     --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
     
-    /* Spacing */
+    /* Spacing - 8-Point Grid System */
+    --spacing-0: 0;
     --spacing-1: 0.25rem;
     --spacing-2: 0.5rem;
     --spacing-3: 0.75rem;
@@ -130,43 +181,85 @@
     --spacing-8: 2rem;
     --spacing-10: 2.5rem;
     --spacing-12: 3rem;
+    --spacing-16: 4rem;
+    --spacing-20: 5rem;
+    --spacing-24: 6rem;
     
     /* Border Radius */
+    --radius-none: 0;
     --radius-sm: 0.25rem;
     --radius-md: 0.5rem;
     --radius-lg: 0.75rem;
     --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    --radius-3xl: 2rem;
+    --radius-full: 9999px;
   }
  
   .dark {
+    /* ===== Dark Mode Theme Variables ===== */
+    
+    /* Legacy shadcn/ui compatibility (HSL format) */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
- 
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
- 
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
- 
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
- 
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
- 
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 199 89% 48%;
     --primary-foreground: 210 40% 98%;
- 
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
- 
     --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
- 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
- 
     --ring: 240 3.7% 15.9%;
+    
+    /* Design System - Primary Colors (adjusted for dark mode) */
+    --color-primary-50: #0c4a6e;
+    --color-primary-100: #075985;
+    --color-primary-200: #0369a1;
+    --color-primary-300: #0284c7;
+    --color-primary-400: #0ea5e9;
+    --color-primary-500: #38bdf8;
+    --color-primary-600: #7dd3fc;
+    --color-primary-700: #bae6fd;
+    --color-primary-800: #e0f2fe;
+    --color-primary-900: #f0f9ff;
+    
+    /* Design System - Neutral Colors (adjusted for dark mode) */
+    --color-neutral-50: #171717;
+    --color-neutral-100: #262626;
+    --color-neutral-200: #404040;
+    --color-neutral-300: #525252;
+    --color-neutral-400: #737373;
+    --color-neutral-500: #a3a3a3;
+    --color-neutral-600: #d4d4d4;
+    --color-neutral-700: #e5e5e5;
+    --color-neutral-800: #f5f5f5;
+    --color-neutral-900: #fafafa;
+    
+    /* Semantic colors remain the same for consistency */
+    --color-success-light: #d1fae5;
+    --color-success: #10b981;
+    --color-success-dark: #059669;
+    
+    --color-warning-light: #fef3c7;
+    --color-warning: #f59e0b;
+    --color-warning-dark: #d97706;
+    
+    --color-error-light: #fee2e2;
+    --color-error: #ef4444;
+    --color-error-dark: #dc2626;
+    
+    --color-info-light: #dbeafe;
+    --color-info: #3b82f6;
+    --color-info-dark: #2563eb;
   }
 }
  
@@ -176,7 +269,7 @@
   }
   body {
     @apply bg-background text-foreground font-sans;
-    font-family: var(--font-family);
+    font-family: var(--font-family-sans);
   }
 }
 

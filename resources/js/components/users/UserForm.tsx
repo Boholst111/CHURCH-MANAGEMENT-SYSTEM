@@ -9,6 +9,7 @@ import {
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { User, UserFormData } from '../../lib/userApi';
+import { Upload, X, Check } from 'lucide-react';
 
 /**
  * Validation errors interface
@@ -18,7 +19,13 @@ export interface ValidationErrors {
   email?: string;
   password?: string;
   role?: string;
+  photo?: string;
 }
+
+/**
+ * Password strength levels
+ */
+type PasswordStrength = 'weak' | 'fair' | 'good' | 'strong';
 
 /**
  * UserForm Props
@@ -61,6 +68,9 @@ const UserForm: React.FC<UserFormProps> = ({
 
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength | null>(null);
 
   /**
    * Initialize form data when user prop changes
@@ -73,6 +83,10 @@ const UserForm: React.FC<UserFormProps> = ({
         password: '', // Password is optional when editing
         role: user.role,
       });
+      // Set photo preview if user has a photo
+      if ((user as any).photo) {
+        setPhotoPreview((user as any).photo);
+      }
     } else {
       // Reset form for new user
       setFormData({
@@ -81,9 +95,71 @@ const UserForm: React.FC<UserFormProps> = ({
         password: '',
         role: 'staff',
       });
+      setPhotoPreview(null);
+      setPhotoFile(null);
     }
     setErrors({});
+    setPasswordStrength(null);
   }, [user, isOpen]);
+
+  /**
+   * Calculate password strength
+   */
+  const calculatePasswordStrength = (password: string): PasswordStrength => {
+    let strength = 0;
+    
+    // Length check
+    if (password.length >= 8) strength++;
+    if (password.length >= 12) strength++;
+    
+    // Character variety checks
+    if (/[a-z]/.test(password)) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^a-zA-Z0-9]/.test(password)) strength++; // Special characters
+    
+    // Map strength score to label
+    if (strength <= 2) return 'weak';
+    if (strength <= 3) return 'fair';
+    if (strength <= 4) return 'good';
+    return 'strong';
+  };
+
+  /**
+   * Get password strength color
+   */
+  const getPasswordStrengthColor = (strength: PasswordStrength): string => {
+    switch (strength) {
+      case 'weak':
+        return 'bg-error-500';
+      case 'fair':
+        return 'bg-warning-500';
+      case 'good':
+        return 'bg-primary-500';
+      case 'strong':
+        return 'bg-success-500';
+      default:
+        return 'bg-neutral-300';
+    }
+  };
+
+  /**
+   * Get password strength width
+   */
+  const getPasswordStrengthWidth = (strength: PasswordStrength): string => {
+    switch (strength) {
+      case 'weak':
+        return 'w-1/4';
+      case 'fair':
+        return 'w-2/4';
+      case 'good':
+        return 'w-3/4';
+      case 'strong':
+        return 'w-full';
+      default:
+        return 'w-0';
+    }
+  };
 
   /**
    * Validate password complexity
@@ -144,7 +220,7 @@ const UserForm: React.FC<UserFormProps> = ({
     // Role validation
     if (!formData.role) {
       newErrors.role = 'Role is required';
-    } else if (!['admin', 'staff', 'readonly'].includes(formData.role)) {
+    } else if (!['admin', 'pastor', 'staff', 'volunteer', 'readonly'].includes(formData.role)) {
       newErrors.role = 'Invalid role selected';
     }
 
@@ -164,6 +240,13 @@ const UserForm: React.FC<UserFormProps> = ({
       [name]: value,
     }));
     
+    // Update password strength indicator
+    if (name === 'password' && value) {
+      setPasswordStrength(calculatePasswordStrength(value));
+    } else if (name === 'password' && !value) {
+      setPasswordStrength(null);
+    }
+    
     // Clear error for this field when user starts typing
     if (errors[name as keyof ValidationErrors]) {
       setErrors((prev) => ({
@@ -171,6 +254,58 @@ const UserForm: React.FC<UserFormProps> = ({
         [name]: undefined,
       }));
     }
+  };
+
+  /**
+   * Handle photo upload
+   */
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setErrors((prev) => ({
+        ...prev,
+        photo: 'Please select a valid image file',
+      }));
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors((prev) => ({
+        ...prev,
+        photo: 'Image size must be less than 5MB',
+      }));
+      return;
+    }
+
+    // Clear photo error
+    setErrors((prev) => ({
+      ...prev,
+      photo: undefined,
+    }));
+
+    // Set photo file and preview
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  /**
+   * Remove photo
+   */
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setErrors((prev) => ({
+      ...prev,
+      photo: undefined,
+    }));
   };
 
   /**
@@ -223,6 +358,64 @@ const UserForm: React.FC<UserFormProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Photo Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Photo
+            </label>
+            <div className="flex items-center gap-4">
+              {photoPreview ? (
+                <div className="relative">
+                  <img
+                    src={photoPreview}
+                    alt="User photo preview"
+                    className="w-20 h-20 rounded-full object-cover border-2 border-primary-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="absolute -top-2 -right-2 bg-error-500 text-white rounded-full p-1 hover:bg-error-600 transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-neutral-100 flex items-center justify-center border-2 border-dashed border-neutral-300">
+                  <Upload className="h-8 w-8 text-neutral-400" />
+                </div>
+              )}
+              <div className="flex-1">
+                <input
+                  type="file"
+                  id="photo"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                  disabled={isSubmitting}
+                />
+                <label htmlFor="photo">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('photo')?.click()}
+                    disabled={isSubmitting}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {photoPreview ? 'Change Photo' : 'Upload Photo'}
+                  </Button>
+                </label>
+                <p className="text-xs text-gray-500 mt-1">
+                  JPG, PNG or GIF. Max size 5MB.
+                </p>
+              </div>
+            </div>
+            {errors.photo && (
+              <p className="text-sm text-red-600 mt-1">{errors.photo}</p>
+            )}
+          </div>
+
           {/* Name Field */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -279,6 +472,29 @@ const UserForm: React.FC<UserFormProps> = ({
               disabled={isSubmitting}
               placeholder={user ? 'Enter new password (optional)' : 'Enter password'}
             />
+            
+            {/* Password Strength Indicator */}
+            {!user && formData.password && passwordStrength && (
+              <div className="mt-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-600">Password strength:</span>
+                  <span className={`text-xs font-medium ${
+                    passwordStrength === 'weak' ? 'text-error-600' :
+                    passwordStrength === 'fair' ? 'text-warning-600' :
+                    passwordStrength === 'good' ? 'text-primary-600' :
+                    'text-success-600'
+                  }`}>
+                    {passwordStrength.charAt(0).toUpperCase() + passwordStrength.slice(1)}
+                  </span>
+                </div>
+                <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-300 ${getPasswordStrengthColor(passwordStrength)} ${getPasswordStrengthWidth(passwordStrength)}`}
+                  />
+                </div>
+              </div>
+            )}
+            
             {errors.password && (
               <p className="text-sm text-red-600 mt-1">{errors.password}</p>
             )}
@@ -303,7 +519,9 @@ const UserForm: React.FC<UserFormProps> = ({
               disabled={isSubmitting}
             >
               <option value="admin">Administrator</option>
+              <option value="pastor">Pastor</option>
               <option value="staff">Staff</option>
+              <option value="volunteer">Volunteer</option>
               <option value="readonly">Read-Only</option>
             </select>
             {errors.role && (
@@ -311,7 +529,9 @@ const UserForm: React.FC<UserFormProps> = ({
             )}
             <p className="text-xs text-gray-500 mt-1">
               {formData.role === 'admin' && 'Full access to all features and settings'}
+              {formData.role === 'pastor' && 'Access to ministry and member management'}
               {formData.role === 'staff' && 'Can view and edit most data'}
+              {formData.role === 'volunteer' && 'Limited access to assigned areas'}
               {formData.role === 'readonly' && 'Can only view data, no editing allowed'}
             </p>
           </div>

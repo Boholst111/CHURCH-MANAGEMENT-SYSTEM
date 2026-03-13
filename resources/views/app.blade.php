@@ -25,6 +25,11 @@
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     
+    <!-- Feature Flags -->
+    <script>
+        window.__FEATURE_FLAGS__ = @json(\App\Helpers\FeatureFlag::getAllFlags());
+    </script>
+    
     <!-- Scripts -->
     <script src="{{ mix('js/app.js') }}"></script>
 </body>

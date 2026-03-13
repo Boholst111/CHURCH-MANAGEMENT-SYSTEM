@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Income Statement</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1 { color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
+        .header { margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #4CAF50; color: white; }
+        .total-row { font-weight: bold; background-color: #f5f5f5; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Income Statement</h1>
+        <p><strong>Period:</strong> <?php echo e($start_date); ?> to <?php echo e($end_date); ?></p>
+        <p><strong>Generated:</strong> <?php echo e($generated_at); ?></p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Offering Type</th>
+                <th style="text-align: right;">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php $__currentLoopData = $offerings; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $offering): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <tr>
+                <td><?php echo e($offering->type); ?></td>
+                <td style="text-align: right;">₱<?php echo e(number_format($offering->total, 2)); ?></td>
+            </tr>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            <tr class="total-row">
+                <td>Total Income</td>
+                <td style="text-align: right;">₱<?php echo e(number_format($total, 2)); ?></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>This report was generated automatically by the Church Management System.</p>
+    </div>
+</body>
+</html>
+<?php /**PATH C:\PARE\CEBRANO_BOHOLST_IPT2\resources\views/reports/income-statement.blade.php ENDPATH**/ ?>

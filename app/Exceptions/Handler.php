@@ -38,4 +38,26 @@ class Handler extends ExceptionHandler
             //
         });
     }
+
+    /**
+     * Convert an authentication exception into a response.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Auth\AuthenticationException  $exception
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    protected function unauthenticated($request, \Illuminate\Auth\AuthenticationException $exception)
+    {
+        // For API requests or if the request expects JSON, return JSON response
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated.',
+                'error' => 'You must be logged in to access this resource.'
+            ], 401);
+        }
+
+        // For web requests, redirect to home (React app will handle routing)
+        return redirect('/');
+    }
 }

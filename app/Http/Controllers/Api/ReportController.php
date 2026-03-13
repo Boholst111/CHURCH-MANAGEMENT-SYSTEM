@@ -78,6 +78,8 @@ class ReportController extends Controller
         $startDate = $validated['start_date'] ?? now()->startOfMonth()->format('Y-m-d');
         $endDate = $validated['end_date'] ?? now()->format('Y-m-d');
 
+        \Log::info("Generating report: {$reportType} from {$startDate} to {$endDate}");
+        
         try {
             switch ($reportType) {
                 case 'financial-summary':
@@ -99,16 +101,19 @@ class ReportController extends Controller
                     return $this->reportService->generateFundBalancePDF($startDate, $endDate);
                 
                 default:
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Invalid report type',
-                    ], 400);
+                    \Log::error("Invalid report type requested: {$reportType}");
+                    abort(404, 'Report type not found');
             }
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to generate report: ' . $e->getMessage(),
-            ], 500);
+            \Log::error("Report generation failed: " . $e->getMessage(), [
+                'report_type' => $reportType,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'exception' => $e->getTraceAsString()
+            ]);
+            
+            // Return a proper error response that won't be confused with PDF
+            abort(500, 'Failed to generate report: ' . $e->getMessage());
         }
     }
 

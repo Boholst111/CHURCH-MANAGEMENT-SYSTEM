@@ -11,7 +11,9 @@
  */
 
 export { Button, buttonVariants, type ButtonProps } from "./button"
-export { Input, type InputProps } from "./input"
+export { Input, inputVariants, type InputProps } from "./input"
+export { Badge, badgeVariants, type BadgeProps } from "./badge"
+export { Icon, iconVariants, type IconProps } from "./icon"
 export {
   Card,
   CardHeader,
@@ -29,6 +31,9 @@ export {
   TableRow,
   TableCell,
   TableCaption,
+  DataTable,
+  type TableColumn,
+  type DataTableProps,
 } from "./table"
 export {
   Dialog,
@@ -44,3 +49,19 @@ export {
 } from "./dialog"
 export { Modal, type ModalProps } from "./modal"
 export { Spinner, LoadingOverlay, InlineLoader, type SpinnerProps } from "./spinner"
+export { Select, selectTriggerVariants, type SelectProps, type SelectOption } from "./select"
+export { DatePicker, datePickerTriggerVariants, type DatePickerProps, type DateRange, type DatePreset } from "./datepicker"
+export { Pagination, paginationVariants, type PaginationProps } from "./pagination"
+export {
+  SidebarProvider,
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+  SidebarItem,
+  SidebarGroup,
+  SidebarNestedItem,
+  SidebarToggle,
+  useSidebar,
+  type SidebarItemProps,
+} from "./sidebar"

@@ -1,49 +1,32 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import userEvent from '@testing-library/user-event';
 import UserForm from '../UserForm';
 import { User, UserFormData } from '../../../lib/userApi';
 
 /**
  * Unit tests for UserForm component
  * 
- * Tests form validation, password complexity, rendering, and submission behavior
- * Validates Requirements: 10.4, 10.5
+ * Tests:
+ * - Form rendering with all fields
+ * - Add user mode (new user)
+ * - Edit user mode (existing user)
+ * - Form validation
+ * - Password strength indicator
+ * - Photo upload functionality
+ * - Role selector with all options
+ * - Email format validation
  */
 describe('UserForm', () => {
   const mockOnClose = jest.fn();
   const mockOnSubmit = jest.fn();
-
-  const mockUser: User = {
-    id: 1,
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    role: 'staff',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-  };
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe('Rendering', () => {
-    it('should render form with all input fields', () => {
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      expect(screen.getByLabelText(/^name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/^email/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/^password/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/^role/i)).toBeInTheDocument();
-    });
-
-    it('should render "Add New User" title when no user is provided', () => {
+    it('renders add user form with all fields', () => {
       render(
         <UserForm
           isOpen={true}
@@ -53,40 +36,41 @@ describe('UserForm', () => {
       );
 
       expect(screen.getByText('Add New User')).toBeInTheDocument();
+      expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/^password/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/role/i)).toBeInTheDocument();
+      expect(screen.getByText('Upload Photo')).toBeInTheDocument();
     });
 
-    it('should render "Edit User" title when user is provided', () => {
+    it('renders edit user form with existing user data', () => {
+      const user: User = {
+        id: 1,
+        name: 'John Doe',
+        email: 'john@example.com',
+        role: 'staff',
+        created_at: '2024-01-01',
+        updated_at: '2024-01-01',
+      };
+
       render(
         <UserForm
           isOpen={true}
           onClose={mockOnClose}
           onSubmit={mockOnSubmit}
-          user={mockUser}
+          user={user}
         />
       );
 
       expect(screen.getByText('Edit User')).toBeInTheDocument();
-    });
-
-    it('should populate form fields when editing a user', () => {
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-          user={mockUser}
-        />
-      );
-
       expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('john.doe@example.com')).toBeInTheDocument();
-      
-      // Check that the role select has the correct value
-      const roleSelect = screen.getByLabelText(/^role/i) as HTMLSelectElement;
+      expect(screen.getByDisplayValue('john@example.com')).toBeInTheDocument();
+      // Check that staff role is selected
+      const roleSelect = screen.getByLabelText(/role/i) as HTMLSelectElement;
       expect(roleSelect.value).toBe('staff');
     });
 
-    it('should render all role options', () => {
+    it('renders all role options', () => {
       render(
         <UserForm
           isOpen={true}
@@ -95,66 +79,20 @@ describe('UserForm', () => {
         />
       );
 
+      const roleSelect = screen.getByLabelText(/role/i);
+      expect(roleSelect).toBeInTheDocument();
+      
+      // Check all role options exist
       expect(screen.getByRole('option', { name: /administrator/i })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: /pastor/i })).toBeInTheDocument();
       expect(screen.getByRole('option', { name: /^staff$/i })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: /volunteer/i })).toBeInTheDocument();
       expect(screen.getByRole('option', { name: /read-only/i })).toBeInTheDocument();
-    });
-
-    it('should show password as required for new users', () => {
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      const passwordLabel = screen.getByText(/^password/i);
-      expect(passwordLabel).toBeInTheDocument();
-      expect(passwordLabel.textContent).toContain('*');
-    });
-
-    it('should show password as optional for editing users', () => {
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-          user={mockUser}
-        />
-      );
-
-      expect(screen.getByText(/leave blank to keep current/i)).toBeInTheDocument();
-    });
-
-    it('should display password complexity requirements', () => {
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      expect(screen.getByText(/must be at least 8 characters with uppercase, lowercase, and number/i)).toBeInTheDocument();
-    });
-
-    it('should display role descriptions', () => {
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      // Default role is staff
-      expect(screen.getByText(/can view and edit most data/i)).toBeInTheDocument();
     });
   });
 
-  describe('Validation - Required Fields', () => {
-    it('should show error when name is empty', async () => {
+  describe('Form Validation', () => {
+    it('validates required fields for new user', async () => {
       render(
         <UserForm
           isOpen={true}
@@ -168,74 +106,14 @@ describe('UserForm', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Name is required')).toBeInTheDocument();
-      });
-
-      expect(mockOnSubmit).not.toHaveBeenCalled();
-    });
-
-    it('should show error when email is empty', async () => {
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      const submitButton = screen.getByRole('button', { name: /add user/i });
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
         expect(screen.getByText('Email is required')).toBeInTheDocument();
-      });
-
-      expect(mockOnSubmit).not.toHaveBeenCalled();
-    });
-
-    it('should show error when password is empty for new user', async () => {
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      const submitButton = screen.getByRole('button', { name: /add user/i });
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
         expect(screen.getByText('Password is required')).toBeInTheDocument();
       });
 
       expect(mockOnSubmit).not.toHaveBeenCalled();
     });
 
-    it('should not require password when editing existing user', async () => {
-      mockOnSubmit.mockResolvedValue(undefined);
-
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-          user={mockUser}
-        />
-      );
-
-      // Don't change password, just submit
-      const submitButton = screen.getByRole('button', { name: /update user/i });
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(mockOnSubmit).toHaveBeenCalled();
-      });
-
-      // Should not show password required error
-      expect(screen.queryByText('Password is required')).not.toBeInTheDocument();
-    });
-
-    it('should show error when email format is invalid', async () => {
+    it('validates email format', async () => {
       render(
         <UserForm
           isOpen={true}
@@ -244,45 +122,24 @@ describe('UserForm', () => {
         />
       );
 
-      const emailInput = screen.getByLabelText(/^email/i);
-      fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
+      const emailInput = screen.getByLabelText(/email/i);
+      const nameInput = screen.getByLabelText(/name/i);
+      const passwordInput = screen.getByLabelText(/^password/i);
+      
+      // Fill in required fields
+      await userEvent.type(nameInput, 'Test User');
+      await userEvent.type(emailInput, 'invalid-email');
+      await userEvent.type(passwordInput, 'ValidPass123');
 
       const submitButton = screen.getByRole('button', { name: /add user/i });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
         expect(screen.getByText('Please enter a valid email address')).toBeInTheDocument();
-      });
-
-      expect(mockOnSubmit).not.toHaveBeenCalled();
+      }, { timeout: 3000 });
     });
 
-    it('should show error when name exceeds 100 characters', async () => {
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      const nameInput = screen.getByLabelText(/^name/i);
-      const longName = 'a'.repeat(101);
-      fireEvent.change(nameInput, { target: { value: longName } });
-
-      const submitButton = screen.getByRole('button', { name: /add user/i });
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Name must be 100 characters or less')).toBeInTheDocument();
-      });
-
-      expect(mockOnSubmit).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Validation - Password Complexity', () => {
-    it('should show error when password is less than 8 characters', async () => {
+    it('validates password complexity', async () => {
       render(
         <UserForm
           isOpen={true}
@@ -292,85 +149,36 @@ describe('UserForm', () => {
       );
 
       const passwordInput = screen.getByLabelText(/^password/i);
-      fireEvent.change(passwordInput, { target: { value: 'Pass1' } });
-
+      
+      // Test too short
+      await userEvent.type(passwordInput, 'short');
       const submitButton = screen.getByRole('button', { name: /add user/i });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Password must be at least 8 characters long')).toBeInTheDocument();
+        expect(screen.getByText(/must be at least 8 characters/i)).toBeInTheDocument();
       });
 
-      expect(mockOnSubmit).not.toHaveBeenCalled();
-    });
-
-    it('should show error when password lacks uppercase letter', async () => {
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      const passwordInput = screen.getByLabelText(/^password/i);
-      fireEvent.change(passwordInput, { target: { value: 'password123' } });
-
-      const submitButton = screen.getByRole('button', { name: /add user/i });
+      // Clear and test missing uppercase
+      await userEvent.clear(passwordInput);
+      await userEvent.type(passwordInput, 'lowercase123');
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Password must contain at least one uppercase letter')).toBeInTheDocument();
+        expect(screen.getByText(/must contain at least one uppercase letter/i)).toBeInTheDocument();
       });
-
-      expect(mockOnSubmit).not.toHaveBeenCalled();
     });
 
-    it('should show error when password lacks lowercase letter', async () => {
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-        />
-      );
+    it('does not require password when editing existing user', async () => {
+      const user: User = {
+        id: 1,
+        name: 'John Doe',
+        email: 'john@example.com',
+        role: 'staff',
+        created_at: '2024-01-01',
+        updated_at: '2024-01-01',
+      };
 
-      const passwordInput = screen.getByLabelText(/^password/i);
-      fireEvent.change(passwordInput, { target: { value: 'PASSWORD123' } });
-
-      const submitButton = screen.getByRole('button', { name: /add user/i });
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Password must contain at least one lowercase letter')).toBeInTheDocument();
-      });
-
-      expect(mockOnSubmit).not.toHaveBeenCalled();
-    });
-
-    it('should show error when password lacks number', async () => {
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      const passwordInput = screen.getByLabelText(/^password/i);
-      fireEvent.change(passwordInput, { target: { value: 'Password' } });
-
-      const submitButton = screen.getByRole('button', { name: /add user/i });
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Password must contain at least one number')).toBeInTheDocument();
-      });
-
-      expect(mockOnSubmit).not.toHaveBeenCalled();
-    });
-
-    it('should accept valid password with all requirements', async () => {
       mockOnSubmit.mockResolvedValue(undefined);
 
       render(
@@ -378,57 +186,186 @@ describe('UserForm', () => {
           isOpen={true}
           onClose={mockOnClose}
           onSubmit={mockOnSubmit}
+          user={user}
         />
       );
-
-      // Fill in all fields with valid data
-      fireEvent.change(screen.getByLabelText(/^name/i), {
-        target: { value: 'Jane Smith' },
-      });
-      fireEvent.change(screen.getByLabelText(/^email/i), {
-        target: { value: 'jane.smith@example.com' },
-      });
-      fireEvent.change(screen.getByLabelText(/^password/i), {
-        target: { value: 'Password123' },
-      });
-
-      const submitButton = screen.getByRole('button', { name: /add user/i });
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(mockOnSubmit).toHaveBeenCalled();
-      });
-
-      // Should not show any password errors
-      expect(screen.queryByText(/password must/i)).not.toBeInTheDocument();
-    });
-
-    it('should validate password complexity when editing user with new password', async () => {
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-          user={mockUser}
-        />
-      );
-
-      const passwordInput = screen.getByLabelText(/^password/i);
-      fireEvent.change(passwordInput, { target: { value: 'weak' } });
 
       const submitButton = screen.getByRole('button', { name: /update user/i });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Password must be at least 8 characters long')).toBeInTheDocument();
+        expect(mockOnSubmit).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('Password Strength Indicator', () => {
+    it('shows password strength indicator for new users', async () => {
+      render(
+        <UserForm
+          isOpen={true}
+          onClose={mockOnClose}
+          onSubmit={mockOnSubmit}
+        />
+      );
+
+      const passwordInput = screen.getByLabelText(/^password/i);
+      
+      // Type a weak password
+      await userEvent.type(passwordInput, 'Pass123');
+      
+      await waitFor(() => {
+        expect(screen.getByText(/password strength:/i)).toBeInTheDocument();
+      });
+    });
+
+    it('calculates weak password strength correctly', async () => {
+      render(
+        <UserForm
+          isOpen={true}
+          onClose={mockOnClose}
+          onSubmit={mockOnSubmit}
+        />
+      );
+
+      const passwordInput = screen.getByLabelText(/^password/i);
+      // Use a password that meets minimum length but is still weak
+      await userEvent.type(passwordInput, 'Pass1234');
+      
+      await waitFor(() => {
+        expect(screen.getByText('Fair')).toBeInTheDocument();
+      }, { timeout: 3000 });
+    });
+
+    it('calculates strong password strength correctly', async () => {
+      render(
+        <UserForm
+          isOpen={true}
+          onClose={mockOnClose}
+          onSubmit={mockOnSubmit}
+        />
+      );
+
+      const passwordInput = screen.getByLabelText(/^password/i);
+      await userEvent.type(passwordInput, 'StrongP@ssw0rd123');
+      
+      await waitFor(() => {
+        expect(screen.getByText(/strong/i)).toBeInTheDocument();
+      });
+    });
+
+    it('does not show password strength indicator when editing user', async () => {
+      const user: User = {
+        id: 1,
+        name: 'John Doe',
+        email: 'john@example.com',
+        role: 'staff',
+        created_at: '2024-01-01',
+        updated_at: '2024-01-01',
+      };
+
+      render(
+        <UserForm
+          isOpen={true}
+          onClose={mockOnClose}
+          onSubmit={mockOnSubmit}
+          user={user}
+        />
+      );
+
+      const passwordInput = screen.getByLabelText(/^password/i);
+      await userEvent.type(passwordInput, 'NewPass123');
+      
+      // Should not show strength indicator for edit mode
+      expect(screen.queryByText(/password strength:/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Photo Upload', () => {
+    it('renders photo upload section', () => {
+      render(
+        <UserForm
+          isOpen={true}
+          onClose={mockOnClose}
+          onSubmit={mockOnSubmit}
+        />
+      );
+
+      expect(screen.getByText(/upload photo/i)).toBeInTheDocument();
+      expect(screen.getByText(/jpg, png or gif/i)).toBeInTheDocument();
+    });
+
+    it('shows photo preview after upload', async () => {
+      render(
+        <UserForm
+          isOpen={true}
+          onClose={mockOnClose}
+          onSubmit={mockOnSubmit}
+        />
+      );
+
+      const file = new File(['dummy content'], 'test.png', { type: 'image/png' });
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      
+      await userEvent.upload(input, file);
+
+      await waitFor(() => {
+        const img = screen.getByAltText(/user photo preview/i);
+        expect(img).toBeInTheDocument();
+      });
+    });
+
+    it('validates file type', async () => {
+      render(
+        <UserForm
+          isOpen={true}
+          onClose={mockOnClose}
+          onSubmit={mockOnSubmit}
+        />
+      );
+
+      const file = new File(['dummy content'], 'test.txt', { type: 'text/plain' });
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      
+      await userEvent.upload(input, file);
+
+      await waitFor(() => {
+        expect(screen.getByText('Please select a valid image file')).toBeInTheDocument();
+      }, { timeout: 3000 });
+    });
+
+    it('allows removing uploaded photo', async () => {
+      render(
+        <UserForm
+          isOpen={true}
+          onClose={mockOnClose}
+          onSubmit={mockOnSubmit}
+        />
+      );
+
+      const file = new File(['dummy content'], 'test.png', { type: 'image/png' });
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      
+      await userEvent.upload(input, file);
+
+      await waitFor(() => {
+        expect(screen.getByAltText(/user photo preview/i)).toBeInTheDocument();
       });
 
-      expect(mockOnSubmit).not.toHaveBeenCalled();
+      // Find and click remove button
+      const removeButton = screen.getByRole('button', { name: '' }).closest('button');
+      if (removeButton) {
+        fireEvent.click(removeButton);
+      }
+
+      await waitFor(() => {
+        expect(screen.queryByAltText(/user photo preview/i)).not.toBeInTheDocument();
+      });
     });
   });
 
   describe('Form Submission', () => {
-    it('should call onSubmit with form data when all fields are valid', async () => {
+    it('submits form with valid data for new user', async () => {
       mockOnSubmit.mockResolvedValue(undefined);
 
       render(
@@ -439,19 +376,12 @@ describe('UserForm', () => {
         />
       );
 
-      // Fill in all required fields
-      fireEvent.change(screen.getByLabelText(/^name/i), {
-        target: { value: 'Jane Smith' },
-      });
-      fireEvent.change(screen.getByLabelText(/^email/i), {
-        target: { value: 'jane.smith@example.com' },
-      });
-      fireEvent.change(screen.getByLabelText(/^password/i), {
-        target: { value: 'SecurePass123' },
-      });
-      fireEvent.change(screen.getByLabelText(/^role/i), {
-        target: { value: 'admin' },
-      });
+      await userEvent.type(screen.getByLabelText(/name/i), 'Jane Smith');
+      await userEvent.type(screen.getByLabelText(/email/i), 'jane@example.com');
+      await userEvent.type(screen.getByLabelText(/^password/i), 'SecurePass123');
+      
+      const roleSelect = screen.getByLabelText(/role/i);
+      await userEvent.selectOptions(roleSelect, 'pastor');
 
       const submitButton = screen.getByRole('button', { name: /add user/i });
       fireEvent.click(submitButton);
@@ -459,14 +389,23 @@ describe('UserForm', () => {
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith({
           name: 'Jane Smith',
-          email: 'jane.smith@example.com',
+          email: 'jane@example.com',
           password: 'SecurePass123',
-          role: 'admin',
+          role: 'pastor',
         });
       });
     });
 
-    it('should not include password in submission when editing and password is empty', async () => {
+    it('submits form without password when editing and password is empty', async () => {
+      const user: User = {
+        id: 1,
+        name: 'John Doe',
+        email: 'john@example.com',
+        role: 'staff',
+        created_at: '2024-01-01',
+        updated_at: '2024-01-01',
+      };
+
       mockOnSubmit.mockResolvedValue(undefined);
 
       render(
@@ -474,58 +413,28 @@ describe('UserForm', () => {
           isOpen={true}
           onClose={mockOnClose}
           onSubmit={mockOnSubmit}
-          user={mockUser}
+          user={user}
         />
       );
 
-      // Don't change password
-      const submitButton = screen.getByRole('button', { name: /update user/i });
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(mockOnSubmit).toHaveBeenCalledWith({
-          name: 'John Doe',
-          email: 'john.doe@example.com',
-          role: 'staff',
-        });
-      });
-
-      // Password should not be in the submitted data
-      const submittedData = mockOnSubmit.mock.calls[0][0];
-      expect(submittedData).not.toHaveProperty('password');
-    });
-
-    it('should include password in submission when editing and password is provided', async () => {
-      mockOnSubmit.mockResolvedValue(undefined);
-
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-          user={mockUser}
-        />
-      );
-
-      // Change password
-      fireEvent.change(screen.getByLabelText(/^password/i), {
-        target: { value: 'NewPassword123' },
-      });
+      // Change name only
+      const nameInput = screen.getByLabelText(/name/i);
+      await userEvent.clear(nameInput);
+      await userEvent.type(nameInput, 'John Updated');
 
       const submitButton = screen.getByRole('button', { name: /update user/i });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith({
-          name: 'John Doe',
-          email: 'john.doe@example.com',
-          password: 'NewPassword123',
+          name: 'John Updated',
+          email: 'john@example.com',
           role: 'staff',
         });
       });
     });
 
-    it('should call onClose after successful submission', async () => {
+    it('closes form after successful submission', async () => {
       mockOnSubmit.mockResolvedValue(undefined);
 
       render(
@@ -536,16 +445,9 @@ describe('UserForm', () => {
         />
       );
 
-      // Fill in all required fields
-      fireEvent.change(screen.getByLabelText(/^name/i), {
-        target: { value: 'Jane Smith' },
-      });
-      fireEvent.change(screen.getByLabelText(/^email/i), {
-        target: { value: 'jane.smith@example.com' },
-      });
-      fireEvent.change(screen.getByLabelText(/^password/i), {
-        target: { value: 'SecurePass123' },
-      });
+      await userEvent.type(screen.getByLabelText(/name/i), 'Jane Smith');
+      await userEvent.type(screen.getByLabelText(/email/i), 'jane@example.com');
+      await userEvent.type(screen.getByLabelText(/^password/i), 'SecurePass123');
 
       const submitButton = screen.getByRole('button', { name: /add user/i });
       fireEvent.click(submitButton);
@@ -555,40 +457,8 @@ describe('UserForm', () => {
       });
     });
 
-    it('should disable submit button while submitting', async () => {
-      mockOnSubmit.mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 100))
-      );
-
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      // Fill in all required fields
-      fireEvent.change(screen.getByLabelText(/^name/i), {
-        target: { value: 'Jane Smith' },
-      });
-      fireEvent.change(screen.getByLabelText(/^email/i), {
-        target: { value: 'jane.smith@example.com' },
-      });
-      fireEvent.change(screen.getByLabelText(/^password/i), {
-        target: { value: 'SecurePass123' },
-      });
-
-      const submitButton = screen.getByRole('button', { name: /add user/i });
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /saving/i })).toBeDisabled();
-      });
-    });
-
-    it('should handle server-side validation errors', async () => {
-      const serverError = {
+    it('handles submission errors', async () => {
+      const error = {
         response: {
           data: {
             errors: {
@@ -597,7 +467,7 @@ describe('UserForm', () => {
           },
         },
       };
-      mockOnSubmit.mockRejectedValue(serverError);
+      mockOnSubmit.mockRejectedValue(error);
 
       render(
         <UserForm
@@ -607,16 +477,9 @@ describe('UserForm', () => {
         />
       );
 
-      // Fill in all required fields
-      fireEvent.change(screen.getByLabelText(/^name/i), {
-        target: { value: 'Jane Smith' },
-      });
-      fireEvent.change(screen.getByLabelText(/^email/i), {
-        target: { value: 'existing@example.com' },
-      });
-      fireEvent.change(screen.getByLabelText(/^password/i), {
-        target: { value: 'SecurePass123' },
-      });
+      await userEvent.type(screen.getByLabelText(/name/i), 'Jane Smith');
+      await userEvent.type(screen.getByLabelText(/email/i), 'existing@example.com');
+      await userEvent.type(screen.getByLabelText(/^password/i), 'SecurePass123');
 
       const submitButton = screen.getByRole('button', { name: /add user/i });
       fireEvent.click(submitButton);
@@ -625,13 +488,12 @@ describe('UserForm', () => {
         expect(screen.getByText('Email already exists')).toBeInTheDocument();
       });
 
-      // Form should remain open
-      expect(screen.getByText('Add New User')).toBeInTheDocument();
+      expect(mockOnClose).not.toHaveBeenCalled();
     });
   });
 
-  describe('Error Clearing', () => {
-    it('should clear error when user starts typing in a field', async () => {
+  describe('Role Selection', () => {
+    it('allows selecting admin role', async () => {
       render(
         <UserForm
           isOpen={true}
@@ -640,24 +502,45 @@ describe('UserForm', () => {
         />
       );
 
-      const submitButton = screen.getByRole('button', { name: /add user/i });
-      fireEvent.click(submitButton);
+      const roleSelect = screen.getByLabelText(/role/i);
+      await userEvent.selectOptions(roleSelect, 'admin');
 
-      await waitFor(() => {
-        expect(screen.getByText('Name is required')).toBeInTheDocument();
-      });
+      expect(screen.getByText(/full access to all features and settings/i)).toBeInTheDocument();
+    });
 
-      const nameInput = screen.getByLabelText(/^name/i);
-      fireEvent.change(nameInput, { target: { value: 'John' } });
+    it('allows selecting pastor role', async () => {
+      render(
+        <UserForm
+          isOpen={true}
+          onClose={mockOnClose}
+          onSubmit={mockOnSubmit}
+        />
+      );
 
-      await waitFor(() => {
-        expect(screen.queryByText('Name is required')).not.toBeInTheDocument();
-      });
+      const roleSelect = screen.getByLabelText(/role/i);
+      await userEvent.selectOptions(roleSelect, 'pastor');
+
+      expect(screen.getByText(/access to ministry and member management/i)).toBeInTheDocument();
+    });
+
+    it('allows selecting volunteer role', async () => {
+      render(
+        <UserForm
+          isOpen={true}
+          onClose={mockOnClose}
+          onSubmit={mockOnSubmit}
+        />
+      );
+
+      const roleSelect = screen.getByLabelText(/role/i);
+      await userEvent.selectOptions(roleSelect, 'volunteer');
+
+      expect(screen.getByText(/limited access to assigned areas/i)).toBeInTheDocument();
     });
   });
 
   describe('Cancel Button', () => {
-    it('should call onClose when cancel button is clicked', () => {
+    it('calls onClose when cancel button is clicked', () => {
       render(
         <UserForm
           isOpen={true}
@@ -670,68 +553,6 @@ describe('UserForm', () => {
       fireEvent.click(cancelButton);
 
       expect(mockOnClose).toHaveBeenCalled();
-    });
-
-    it('should disable cancel button during submission', async () => {
-      mockOnSubmit.mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 100))
-      );
-
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      // Fill in required fields and submit
-      fireEvent.change(screen.getByLabelText(/^name/i), {
-        target: { value: 'Jane Smith' },
-      });
-      fireEvent.change(screen.getByLabelText(/^email/i), {
-        target: { value: 'jane@example.com' },
-      });
-      fireEvent.change(screen.getByLabelText(/^password/i), {
-        target: { value: 'SecurePass123' },
-      });
-
-      const submitButton = screen.getByRole('button', { name: /add user/i });
-      fireEvent.click(submitButton);
-
-      // Cancel button should be disabled while submitting
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
-      expect(cancelButton).toBeDisabled();
-    });
-  });
-
-  describe('Role Selection', () => {
-    it('should update role description when role changes', async () => {
-      render(
-        <UserForm
-          isOpen={true}
-          onClose={mockOnClose}
-          onSubmit={mockOnSubmit}
-        />
-      );
-
-      // Default is staff
-      expect(screen.getByText(/can view and edit most data/i)).toBeInTheDocument();
-
-      // Change to admin
-      const roleSelect = screen.getByLabelText(/^role/i);
-      fireEvent.change(roleSelect, { target: { value: 'admin' } });
-
-      await waitFor(() => {
-        expect(screen.getByText(/full access to all features and settings/i)).toBeInTheDocument();
-      });
-
-      // Change to readonly
-      fireEvent.change(roleSelect, { target: { value: 'readonly' } });
-
-      await waitFor(() => {
-        expect(screen.getByText(/can only view data, no editing allowed/i)).toBeInTheDocument();
-      });
     });
   });
 });

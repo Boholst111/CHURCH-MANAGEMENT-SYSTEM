@@ -120,23 +120,47 @@ class ReportService
      */
     public function generateIncomeStatementPDF(string $startDate, string $endDate)
     {
-        $offerings = DB::table('offerings')
-            ->join('offering_types', 'offerings.offering_type_id', '=', 'offering_types.id')
-            ->select('offering_types.name as type', DB::raw('SUM(offerings.amount) as total'))
-            ->whereBetween('offerings.date', [$startDate, $endDate])
-            ->groupBy('offering_types.name')
-            ->get();
-        
-        $data = [
-            'start_date' => $startDate,
-            'end_date' => $endDate,
-            'offerings' => $offerings,
-            'total' => $offerings->sum('total'),
-            'generated_at' => now()->format('Y-m-d H:i:s'),
-        ];
-        
-        $pdf = Pdf::loadView('reports.income-statement', $data);
-        return $pdf->download('income-statement-' . now()->format('Y-m-d') . '.pdf');
+        try {
+            \Log::info("Starting income statement PDF generation", [
+                'start_date' => $startDate,
+                'end_date' => $endDate
+            ]);
+            
+            $offerings = DB::table('offerings')
+                ->join('offering_types', 'offerings.offering_type_id', '=', 'offering_types.id')
+                ->select('offering_types.name as type', DB::raw('SUM(offerings.amount) as total'))
+                ->whereBetween('offerings.date', [$startDate, $endDate])
+                ->groupBy('offering_types.name')
+                ->get();
+            
+            \Log::info("Query executed successfully", [
+                'offerings_count' => $offerings->count(),
+                'total' => $offerings->sum('total')
+            ]);
+            
+            $data = [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'offerings' => $offerings,
+                'total' => $offerings->sum('total'),
+                'generated_at' => now()->format('Y-m-d H:i:s'),
+            ];
+            
+            \Log::info("Loading PDF view");
+            $pdf = Pdf::loadView('reports.income-statement', $data);
+            
+            \Log::info("PDF generated successfully, returning download response");
+            return $pdf->download('income-statement-' . now()->format('Y-m-d') . '.pdf');
+            
+        } catch (\Exception $e) {
+            \Log::error("Failed to generate income statement PDF", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'start_date' => $startDate,
+                'end_date' => $endDate
+            ]);
+            throw $e;
+        }
     }
 
     /**

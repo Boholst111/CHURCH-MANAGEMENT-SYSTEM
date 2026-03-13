@@ -7,6 +7,14 @@ export interface DashboardStats {
   total_offerings: number;
   total_expenses: number;
   net_income: number;
+  active_groups?: number;
+  member_trend?: number;
+  visitor_trend?: number;
+  offerings_trend?: number;
+  expenses_trend?: number;
+  net_income_trend?: number;
+  budget_utilization?: number;
+  total_budget?: number;
 }
 
 export interface AttendanceData {
@@ -27,6 +35,16 @@ export interface Activity {
   description: string;
   created_at: string;
   created_at_human: string;
+}
+
+export interface UpcomingEvent {
+  id: number;
+  title: string;
+  event_date: string;
+  event_date_formatted: string;
+  event_time: string;
+  location: string;
+  description: string;
 }
 
 // Member Types
@@ -51,6 +69,21 @@ export interface Member {
   };
 }
 
+export interface MemberFormData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  membership_type: string;
+  status: 'active' | 'visitor';
+  small_group_id: number | null;
+  date_joined: string;
+  birth_date: string | null;
+  gender: 'male' | 'female' | 'other';
+}
+
 // Financial Report Types
 export interface FinancialData {
   period: string;
@@ -72,4 +105,29 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   error?: string;
+  errors?: Record<string, string[]>;
+}
+
+// User Types
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: 'admin' | 'pastor' | 'staff' | 'volunteer';
+  created_at: string;
+  updated_at: string;
+}
+
+// Beta Feedback Types
+export interface BetaFeedback {
+  id: number;
+  user_id: number;
+  page: string;
+  feedback_type: 'bug' | 'feature' | 'improvement' | 'other';
+  message: string;
+  priority: 'low' | 'medium' | 'high';
+  priorityScore?: number;
+  status: 'new' | 'in_progress' | 'resolved' | 'closed';
+  created_at: string;
+  updated_at: string;
 }

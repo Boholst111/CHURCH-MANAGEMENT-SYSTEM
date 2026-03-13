@@ -18,7 +18,7 @@ describe('Session Expiration Handling - Property-Based Tests', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    mockAxios = new MockAdapter(api as any);
+    mockAxios = new MockAdapter(api);
     // Reset window.location.href mock
     delete (window as any).location;
     (window as any).location = { href: '' };

@@ -2,6 +2,11 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import SmallGroupForm, { SmallGroupFormData, SmallGroup } from '../SmallGroupForm';
+import api from '../../../lib/api';
+
+// Mock the API
+jest.mock('../../../lib/api');
+const mockedApi = api as jest.Mocked<typeof api>;
 
 /**
  * Unit tests for SmallGroupForm component
@@ -29,6 +34,16 @@ describe('SmallGroupForm', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Mock the members API call
+    mockedApi.get.mockResolvedValue({
+      data: {
+        data: [
+          { id: 1, name: 'John Doe', email: 'john@example.com', photo: null },
+          { id: 2, name: 'Jane Smith', email: 'jane@example.com', photo: null },
+        ],
+      },
+    } as any);
   });
 
   describe('Rendering', () => {
@@ -43,7 +58,7 @@ describe('SmallGroupForm', () => {
 
       expect(screen.getByLabelText(/group name/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/leader name/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/search for a member/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/meeting day/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/meeting time/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/location/i)).toBeInTheDocument();
@@ -208,7 +223,7 @@ describe('SmallGroupForm', () => {
       const nameInput = screen.getByLabelText(/group name/i);
       fireEvent.change(nameInput, { target: { value: 'Test Group' } });
 
-      const leaderInput = screen.getByLabelText(/leader name/i);
+      const leaderInput = screen.getByPlaceholderText(/search for a member/i);
       fireEvent.change(leaderInput, {
         target: { value: 'A'.repeat(101) },
       });
@@ -235,7 +250,7 @@ describe('SmallGroupForm', () => {
       const nameInput = screen.getByLabelText(/group name/i);
       fireEvent.change(nameInput, { target: { value: 'Test Group' } });
 
-      const leaderInput = screen.getByLabelText(/leader name/i);
+      const leaderInput = screen.getByPlaceholderText(/search for a member/i);
       fireEvent.change(leaderInput, { target: { value: 'John Doe' } });
 
       const submitButton = screen.getByRole('button', { name: /add group/i });
@@ -260,7 +275,7 @@ describe('SmallGroupForm', () => {
       const nameInput = screen.getByLabelText(/group name/i);
       fireEvent.change(nameInput, { target: { value: 'Test Group' } });
 
-      const leaderInput = screen.getByLabelText(/leader name/i);
+      const leaderInput = screen.getByPlaceholderText(/search for a member/i);
       fireEvent.change(leaderInput, { target: { value: 'John Doe' } });
 
       const locationInput = screen.getByLabelText(/location/i);
@@ -321,7 +336,7 @@ describe('SmallGroupForm', () => {
       const descriptionInput = screen.getByLabelText(/description/i);
       fireEvent.change(descriptionInput, { target: { value: 'Test description' } });
 
-      const leaderInput = screen.getByLabelText(/leader name/i);
+      const leaderInput = screen.getByPlaceholderText(/search for a member/i);
       fireEvent.change(leaderInput, { target: { value: 'John Doe' } });
 
       const meetingDaySelect = screen.getByLabelText(/meeting day/i);
@@ -341,9 +356,11 @@ describe('SmallGroupForm', () => {
           name: 'Test Group',
           description: 'Test description',
           leader_name: 'John Doe',
+          leader_id: null, // No leader selected from dropdown
           meeting_day: 'Wednesday',
           meeting_time: '19:00',
           location: 'Fellowship Hall',
+          photo: null,
         });
       });
 
@@ -364,7 +381,7 @@ describe('SmallGroupForm', () => {
       const nameInput = screen.getByLabelText(/group name/i);
       fireEvent.change(nameInput, { target: { value: 'Test Group' } });
 
-      const leaderInput = screen.getByLabelText(/leader name/i);
+      const leaderInput = screen.getByPlaceholderText(/search for a member/i);
       fireEvent.change(leaderInput, { target: { value: 'John Doe' } });
 
       const locationInput = screen.getByLabelText(/location/i);
@@ -392,7 +409,7 @@ describe('SmallGroupForm', () => {
       const nameInput = screen.getByLabelText(/group name/i);
       fireEvent.change(nameInput, { target: { value: 'Test Group' } });
 
-      const leaderInput = screen.getByLabelText(/leader name/i);
+      const leaderInput = screen.getByPlaceholderText(/search for a member/i);
       fireEvent.change(leaderInput, { target: { value: 'John Doe' } });
 
       const locationInput = screen.getByLabelText(/location/i);
@@ -431,7 +448,7 @@ describe('SmallGroupForm', () => {
       const nameInput = screen.getByLabelText(/group name/i);
       fireEvent.change(nameInput, { target: { value: 'Existing Group' } });
 
-      const leaderInput = screen.getByLabelText(/leader name/i);
+      const leaderInput = screen.getByPlaceholderText(/search for a member/i);
       fireEvent.change(leaderInput, { target: { value: 'John Doe' } });
 
       const locationInput = screen.getByLabelText(/location/i);
@@ -461,7 +478,7 @@ describe('SmallGroupForm', () => {
       const nameInput = screen.getByLabelText(/group name/i);
       fireEvent.change(nameInput, { target: { value: 'Test Group' } });
 
-      const leaderInput = screen.getByLabelText(/leader name/i);
+      const leaderInput = screen.getByPlaceholderText(/search for a member/i);
       fireEvent.change(leaderInput, { target: { value: 'John Doe' } });
 
       const locationInput = screen.getByLabelText(/location/i);
@@ -506,7 +523,7 @@ describe('SmallGroupForm', () => {
       const nameInput = screen.getByLabelText(/group name/i);
       fireEvent.change(nameInput, { target: { value: 'Test Group' } });
 
-      const leaderInput = screen.getByLabelText(/leader name/i);
+      const leaderInput = screen.getByPlaceholderText(/search for a member/i);
       fireEvent.change(leaderInput, { target: { value: 'John Doe' } });
 
       const locationInput = screen.getByLabelText(/location/i);

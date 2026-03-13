@@ -24,6 +24,7 @@ export interface Leadership {
   photo_url: string | null;
   bio: string | null;
   start_date: string;
+  ministry_teams?: string | null;
 }
 
 /**
@@ -39,6 +40,7 @@ export interface LeadershipFormData {
   photo_url: string | null;
   bio: string | null;
   start_date: string;
+  ministry_teams?: string | null;
 }
 
 /**
@@ -54,6 +56,7 @@ export interface ValidationErrors {
   photo_url?: string;
   bio?: string;
   start_date?: string;
+  ministry_teams?: string;
 }
 
 /**
@@ -97,6 +100,7 @@ const LeadershipForm: React.FC<LeadershipFormProps> = ({
     photo_url: null,
     bio: null,
     start_date: new Date().toISOString().split('T')[0],
+    ministry_teams: null,
   });
 
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -119,6 +123,7 @@ const LeadershipForm: React.FC<LeadershipFormProps> = ({
         photo_url: leadership.photo_url,
         bio: leadership.bio,
         start_date: leadership.start_date.split('T')[0],
+        ministry_teams: leadership.ministry_teams || null,
       });
       setPhotoPreview(leadership.photo_url);
     } else {
@@ -133,6 +138,7 @@ const LeadershipForm: React.FC<LeadershipFormProps> = ({
         photo_url: null,
         bio: null,
         start_date: new Date().toISOString().split('T')[0],
+        ministry_teams: null,
       });
       setPhotoPreview(null);
     }
@@ -489,6 +495,28 @@ const LeadershipForm: React.FC<LeadershipFormProps> = ({
             />
             {errors.bio && (
               <p className="text-sm text-red-600 mt-1">{errors.bio}</p>
+            )}
+          </div>
+
+          {/* Ministry Teams */}
+          <div>
+            <label htmlFor="ministry_teams" className="block text-sm font-medium text-gray-700 mb-1">
+              Ministry Teams
+            </label>
+            <Input
+              id="ministry_teams"
+              name="ministry_teams"
+              type="text"
+              value={formData.ministry_teams || ''}
+              onChange={handleChange}
+              placeholder="e.g., Worship, Youth Ministry, Outreach"
+              disabled={isSubmitting}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Enter ministry teams separated by commas
+            </p>
+            {errors.ministry_teams && (
+              <p className="text-sm text-red-600 mt-1">{errors.ministry_teams}</p>
             )}
           </div>
 

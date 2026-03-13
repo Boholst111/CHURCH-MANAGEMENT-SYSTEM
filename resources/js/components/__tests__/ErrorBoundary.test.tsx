@@ -43,27 +43,37 @@ describe('ErrorBoundary', () => {
     expect(screen.getByText(/We're sorry, but something unexpected happened/)).toBeInTheDocument();
   });
 
-  it('should display Try Again button', () => {
+  it('should display Reload Page button', () => {
     render(
       <ErrorBoundary>
         <ThrowError />
       </ErrorBoundary>
     );
 
-    expect(screen.getByText('Try Again')).toBeInTheDocument();
+    expect(screen.getByText('Reload Page')).toBeInTheDocument();
   });
 
-  it('should display Go to Home button', () => {
+  it('should display Go Back button', () => {
     render(
       <ErrorBoundary>
         <ThrowError />
       </ErrorBoundary>
     );
 
-    expect(screen.getByText('Go to Home')).toBeInTheDocument();
+    expect(screen.getByText('Go Back')).toBeInTheDocument();
   });
 
-  it('should have a reset handler that clears error state', () => {
+  it('should display Go Home button', () => {
+    render(
+      <ErrorBoundary>
+        <ThrowError />
+      </ErrorBoundary>
+    );
+
+    expect(screen.getByText('Go Home')).toBeInTheDocument();
+  });
+
+  it('should have reload, go back, and go home buttons that can be clicked', () => {
     render(
       <ErrorBoundary>
         <ThrowError />
@@ -72,12 +82,19 @@ describe('ErrorBoundary', () => {
 
     expect(screen.getByText('Oops! Something went wrong')).toBeInTheDocument();
 
-    // Verify Try Again button exists and can be clicked
-    const tryAgainButton = screen.getByText('Try Again');
-    expect(tryAgainButton).toBeInTheDocument();
+    // Verify all recovery buttons exist
+    const reloadButton = screen.getByText('Reload Page');
+    const goBackButton = screen.getByText('Go Back');
+    const goHomeButton = screen.getByText('Go Home');
     
-    // Click should not throw an error
-    fireEvent.click(tryAgainButton);
+    expect(reloadButton).toBeInTheDocument();
+    expect(goBackButton).toBeInTheDocument();
+    expect(goHomeButton).toBeInTheDocument();
+    
+    // Verify buttons can be clicked without throwing errors
+    expect(() => fireEvent.click(reloadButton)).not.toThrow();
+    expect(() => fireEvent.click(goBackButton)).not.toThrow();
+    expect(() => fireEvent.click(goHomeButton)).not.toThrow();
   });
 
   it('should call onError callback when error is caught', () => {

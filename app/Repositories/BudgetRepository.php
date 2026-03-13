@@ -561,3 +561,4 @@ class BudgetRepository
 
         return $query->orderBy('start_date', 'desc')->paginate($perPage);
     }
+}

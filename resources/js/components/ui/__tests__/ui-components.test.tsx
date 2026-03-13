@@ -17,34 +17,82 @@ describe('UI Components', () => {
       render(<Button>Click me</Button>)
       const button = screen.getByRole('button', { name: /click me/i })
       expect(button).toBeInTheDocument()
-      expect(button).toHaveClass('rounded-md')
+      expect(button).toHaveClass('rounded-lg')
     })
 
     it('renders with different variants', () => {
-      const { rerender } = render(<Button variant="default">Default</Button>)
-      expect(screen.getByRole('button')).toHaveClass('bg-primary')
+      const { rerender } = render(<Button variant="primary">Primary</Button>)
+      expect(screen.getByRole('button')).toHaveClass('bg-primary-600')
 
-      rerender(<Button variant="destructive">Delete</Button>)
-      expect(screen.getByRole('button')).toHaveClass('bg-destructive')
+      rerender(<Button variant="secondary">Secondary</Button>)
+      expect(screen.getByRole('button')).toHaveClass('bg-neutral-100')
 
       rerender(<Button variant="outline">Outline</Button>)
       expect(screen.getByRole('button')).toHaveClass('border')
+
+      rerender(<Button variant="ghost">Ghost</Button>)
+      expect(screen.getByRole('button')).toHaveClass('bg-transparent')
+
+      rerender(<Button variant="danger">Danger</Button>)
+      expect(screen.getByRole('button')).toHaveClass('bg-error-600')
     })
 
     it('renders with different sizes', () => {
-      const { rerender } = render(<Button size="default">Default</Button>)
+      const { rerender } = render(<Button size="md">Medium</Button>)
       expect(screen.getByRole('button')).toHaveClass('h-10')
 
       rerender(<Button size="sm">Small</Button>)
-      expect(screen.getByRole('button')).toHaveClass('h-9')
+      expect(screen.getByRole('button')).toHaveClass('h-8')
 
       rerender(<Button size="lg">Large</Button>)
-      expect(screen.getByRole('button')).toHaveClass('h-11')
+      expect(screen.getByRole('button')).toHaveClass('h-12')
     })
 
     it('applies rounded corners', () => {
       render(<Button>Rounded</Button>)
-      expect(screen.getByRole('button')).toHaveClass('rounded-md')
+      expect(screen.getByRole('button')).toHaveClass('rounded-lg')
+    })
+
+    it('renders with loading state', () => {
+      render(<Button loading>Loading</Button>)
+      const button = screen.getByRole('button')
+      expect(button).toBeDisabled()
+      expect(button).toHaveAttribute('aria-busy', 'true')
+      // Check for spinner icon
+      const spinner = button.querySelector('svg')
+      expect(spinner).toBeInTheDocument()
+      expect(spinner).toHaveClass('animate-spin')
+    })
+
+    it('renders with icon on left', () => {
+      const icon = <span data-testid="test-icon">Icon</span>
+      render(<Button icon={icon} iconPosition="left">With Icon</Button>)
+      const button = screen.getByRole('button')
+      expect(button).toBeInTheDocument()
+      expect(screen.getByTestId('test-icon')).toBeInTheDocument()
+    })
+
+    it('renders with icon on right', () => {
+      const icon = <span data-testid="test-icon">Icon</span>
+      render(<Button icon={icon} iconPosition="right">With Icon</Button>)
+      const button = screen.getByRole('button')
+      expect(button).toBeInTheDocument()
+      expect(screen.getByTestId('test-icon')).toBeInTheDocument()
+    })
+
+    it('renders with fullWidth prop', () => {
+      render(<Button fullWidth>Full Width</Button>)
+      expect(screen.getByRole('button')).toHaveClass('w-full')
+    })
+
+    it('disables button when disabled prop is true', () => {
+      render(<Button disabled>Disabled</Button>)
+      expect(screen.getByRole('button')).toBeDisabled()
+    })
+
+    it('disables button when loading', () => {
+      render(<Button loading>Loading</Button>)
+      expect(screen.getByRole('button')).toBeDisabled()
     })
   })
 
@@ -116,7 +164,7 @@ describe('UI Components', () => {
   describe('Modal', () => {
     it('renders when open', () => {
       render(
-        <Modal open={true} onOpenChange={() => {}} title="Test Modal">
+        <Modal isOpen={true} onClose={() => {}} title="Test Modal">
           <p>Modal content</p>
         </Modal>
       )
@@ -127,7 +175,7 @@ describe('UI Components', () => {
 
     it('does not render when closed', () => {
       render(
-        <Modal open={false} onOpenChange={() => {}} title="Test Modal">
+        <Modal isOpen={false} onClose={() => {}} title="Test Modal">
           <p>Modal content</p>
         </Modal>
       )
@@ -138,8 +186,8 @@ describe('UI Components', () => {
     it('renders with title, description, and footer', () => {
       render(
         <Modal
-          open={true}
-          onOpenChange={() => {}}
+          isOpen={true}
+          onClose={() => {}}
           title="Modal Title"
           description="Modal description"
           footer={<button>Close</button>}
@@ -155,7 +203,7 @@ describe('UI Components', () => {
 
     it('applies rounded corners', () => {
       const { container } = render(
-        <Modal open={true} onOpenChange={() => {}}>
+        <Modal isOpen={true} onClose={() => {}}>
           <p>Content</p>
         </Modal>
       )
@@ -170,7 +218,7 @@ describe('UI Components', () => {
     it('Button accepts ButtonProps interface', () => {
       const props: React.ComponentProps<typeof Button> = {
         variant: 'default',
-        size: 'default',
+        size: 'md',
         children: 'Test',
       }
       render(<Button {...props} />)
@@ -188,8 +236,8 @@ describe('UI Components', () => {
 
     it('Modal accepts ModalProps interface', () => {
       const props: React.ComponentProps<typeof Modal> = {
-        open: true,
-        onOpenChange: () => {},
+        isOpen: true,
+        onClose: () => {},
         title: 'Test',
         children: <p>Content</p>,
       }

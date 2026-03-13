@@ -14,6 +14,14 @@ This directory contains all reusable UI components that follow the church manage
 
 **Requirements:** 7.3, 7.4
 
+## 📚 Documentation
+
+- **[Component API Documentation](./COMPONENT_API_DOCUMENTATION.md)** - Comprehensive API reference for all components with props, examples, and best practices
+- **[Visual Component Guide](./VISUAL_COMPONENT_GUIDE.md)** - Storybook-style visual documentation showing all variants and states
+- **[Quick Reference](./QUICK_REFERENCE.md)** - Cheat sheet for common patterns and quick lookups
+- **[Component Examples](./examples/)** - Live code examples for each component
+- **[Test Files](./__tests__/)** - Unit and integration tests
+
 ## Components
 
 ### Button

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Edit, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Edit, ChevronUp, ChevronDown, ChevronsUpDown, Eye } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -9,6 +9,8 @@ import {
   TableRow,
 } from '../ui/table';
 import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { SkeletonTable } from '../ui/skeleton';
 import ArchiveButton from '../archive/ArchiveButton';
 
 /**
@@ -33,12 +35,14 @@ export interface Member {
     id: number;
     name: string;
   };
+  photo?: string; // Optional photo URL
+  membership_type?: 'regular' | 'associate' | 'visitor'; // Optional membership type
 }
 
 /**
  * Sort configuration type
  */
-type SortColumn = 'name' | 'status' | 'small_group' | 'email' | 'phone';
+type SortColumn = 'name' | 'status' | 'small_group' | 'email' | 'phone' | 'membership_type';
 type SortDirection = 'asc' | 'desc' | null;
 
 interface SortConfig {
@@ -53,6 +57,7 @@ export interface MemberTableProps {
   members: Member[];
   onEdit?: (member: Member) => void;
   onDelete?: (member: Member) => void;
+  onView?: (member: Member) => void;
   onArchiveSuccess?: () => void;
   currentPage: number;
   totalPages: number;
@@ -77,6 +82,7 @@ const MemberTable: React.FC<MemberTableProps> = React.memo(({
   members,
   onEdit,
   onDelete,
+  onView,
   onArchiveSuccess,
   currentPage,
   totalPages,
@@ -87,6 +93,44 @@ const MemberTable: React.FC<MemberTableProps> = React.memo(({
     column: null,
     direction: null,
   });
+
+  /**
+   * Get initials from member name for avatar placeholder
+   */
+  const getInitials = (firstName: string, lastName: string): string => {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  };
+
+  /**
+   * Get membership type from member data
+   * Maps status to membership type for display
+   */
+  const getMembershipType = (member: Member): string => {
+    if (member.membership_type) {
+      return member.membership_type;
+    }
+    // Fallback: map status to membership type
+    return member.status === 'active' ? 'regular' : 'visitor';
+  };
+
+  /**
+   * Format membership type badge
+   */
+  const getMembershipTypeBadge = (type: string) => {
+    const typeMap: Record<string, { variant: 'primary' | 'success' | 'neutral'; label: string }> = {
+      regular: { variant: 'primary', label: 'Regular' },
+      associate: { variant: 'success', label: 'Associate' },
+      visitor: { variant: 'neutral', label: 'Visitor' },
+    };
+
+    const config = typeMap[type.toLowerCase()] || typeMap.visitor;
+    
+    return (
+      <Badge variant={config.variant} size="sm" shape="pill">
+        {config.label}
+      </Badge>
+    );
+  };
 
   /**
    * Handle column sort
@@ -125,6 +169,10 @@ const MemberTable: React.FC<MemberTableProps> = React.memo(({
         case 'status':
           aValue = a.status.toLowerCase();
           bValue = b.status.toLowerCase();
+          break;
+        case 'membership_type':
+          aValue = getMembershipType(a).toLowerCase();
+          bValue = getMembershipType(b).toLowerCase();
           break;
         case 'small_group':
           aValue = a.small_group?.name?.toLowerCase() || '';
@@ -171,29 +219,23 @@ const MemberTable: React.FC<MemberTableProps> = React.memo(({
    * Format status badge
    */
   const getStatusBadge = (status: string) => {
-    const baseClasses = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium';
-    
     if (status === 'active') {
       return (
-        <span className={`${baseClasses} bg-green-100 text-green-800`}>
+        <Badge variant="success" size="sm" shape="pill">
           Active
-        </span>
+        </Badge>
       );
     }
     
     return (
-      <span className={`${baseClasses} bg-blue-100 text-blue-800`}>
-        Visitor
-      </span>
+      <Badge variant="neutral" size="sm" shape="pill">
+        Inactive
+      </Badge>
     );
   };
 
   if (isLoading) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">Loading members...</p>
-      </div>
-    );
+    return <SkeletonTable rows={10} columns={8} />;
   }
 
   if (members.length === 0) {
@@ -215,6 +257,9 @@ const MemberTable: React.FC<MemberTableProps> = React.memo(({
           <Table>
           <TableHeader>
             <TableRow className="bg-gray-50">
+              <TableHead className="w-16">
+                <span className="font-semibold text-gray-700">Photo</span>
+              </TableHead>
               <TableHead>
                 <button
                   onClick={() => handleSort('name')}
@@ -222,24 +267,6 @@ const MemberTable: React.FC<MemberTableProps> = React.memo(({
                 >
                   Name
                   {renderSortIcon('name')}
-                </button>
-              </TableHead>
-              <TableHead>
-                <button
-                  onClick={() => handleSort('status')}
-                  className="flex items-center font-semibold text-gray-700 hover:text-gray-900"
-                >
-                  Status
-                  {renderSortIcon('status')}
-                </button>
-              </TableHead>
-              <TableHead>
-                <button
-                  onClick={() => handleSort('small_group')}
-                  className="flex items-center font-semibold text-gray-700 hover:text-gray-900"
-                >
-                  Small Group
-                  {renderSortIcon('small_group')}
                 </button>
               </TableHead>
               <TableHead>
@@ -260,19 +287,70 @@ const MemberTable: React.FC<MemberTableProps> = React.memo(({
                   {renderSortIcon('phone')}
                 </button>
               </TableHead>
+              <TableHead>
+                <button
+                  onClick={() => handleSort('membership_type')}
+                  className="flex items-center font-semibold text-gray-700 hover:text-gray-900"
+                >
+                  Membership Type
+                  {renderSortIcon('membership_type')}
+                </button>
+              </TableHead>
+              <TableHead>
+                <button
+                  onClick={() => handleSort('small_group')}
+                  className="flex items-center font-semibold text-gray-700 hover:text-gray-900"
+                >
+                  Small Group
+                  {renderSortIcon('small_group')}
+                </button>
+              </TableHead>
+              <TableHead>
+                <button
+                  onClick={() => handleSort('status')}
+                  className="flex items-center font-semibold text-gray-700 hover:text-gray-900"
+                >
+                  Status
+                  {renderSortIcon('status')}
+                </button>
+              </TableHead>
               <TableHead className="text-right">
                 <span className="font-semibold text-gray-700">Actions</span>
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedMembers.map((member) => (
-              <TableRow key={member.id}>
+            {sortedMembers.map((member, index) => (
+              <TableRow 
+                key={member.id}
+                className={index % 2 === 0 ? 'bg-white hover:bg-primary-50' : 'bg-neutral-50 hover:bg-primary-50'}
+              >
+                <TableCell>
+                  {member.photo ? (
+                    <img
+                      src={member.photo}
+                      alt={`${member.first_name} ${member.last_name}`}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-primary-200"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-primary-100 border-2 border-primary-200 flex items-center justify-center">
+                      <span className="text-sm font-medium text-primary-700">
+                        {getInitials(member.first_name, member.last_name)}
+                      </span>
+                    </div>
+                  )}
+                </TableCell>
                 <TableCell className="font-medium">
                   {member.first_name} {member.last_name}
                 </TableCell>
+                <TableCell className="text-gray-600">
+                  {member.email}
+                </TableCell>
+                <TableCell className="text-gray-600">
+                  {member.phone}
+                </TableCell>
                 <TableCell>
-                  {getStatusBadge(member.status)}
+                  {getMembershipTypeBadge(getMembershipType(member))}
                 </TableCell>
                 <TableCell>
                   {member.small_group ? (
@@ -281,14 +359,22 @@ const MemberTable: React.FC<MemberTableProps> = React.memo(({
                     <span className="text-gray-400 italic">None</span>
                   )}
                 </TableCell>
-                <TableCell className="text-gray-600">
-                  {member.email}
-                </TableCell>
-                <TableCell className="text-gray-600">
-                  {member.phone}
+                <TableCell>
+                  {getStatusBadge(member.status)}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
+                    {onView && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onView(member)}
+                        className="h-8 w-8 p-0"
+                        title="View member"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    )}
                     {onEdit && (
                       <Button
                         variant="ghost"

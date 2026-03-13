@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Users } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Plus, Users, Grid, List } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { smallGroupApi, type SmallGroup } from '../lib/smallGroupApi';
 import SmallGroupForm, { SmallGroupFormData } from '../components/smallgroups/SmallGroupForm';
+import GroupCard from '../components/smallgroups/GroupCard';
 import ArchiveButton from '../components/archive/ArchiveButton';
 
 /**
@@ -17,9 +18,11 @@ import ArchiveButton from '../components/archive/ArchiveButton';
  * - Display list of small groups with member counts
  * - Add new small groups (admin only)
  * - View small group details
+ * - Toggle between Grid View and List View
  * - Responsive grid layout
  * 
  * Validates Requirements: 8.4, 8.5
+ * Design Reference: Small Groups Page Design section
  */
 const SmallGroups: React.FC = () => {
   const { user } = useAuth();
@@ -31,6 +34,7 @@ const SmallGroups: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<SmallGroup | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   /**
    * Load small groups on mount
@@ -42,7 +46,7 @@ const SmallGroups: React.FC = () => {
   /**
    * Fetch small groups from API
    */
-  const loadSmallGroups = async () => {
+  const loadSmallGroups = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await smallGroupApi.getSmallGroups();
@@ -53,36 +57,36 @@ const SmallGroups: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [showToast]);
 
   /**
    * Handle add small group button click
    */
-  const handleAddClick = () => {
+  const handleAddClick = useCallback(() => {
     setSelectedGroup(null);
     setIsFormOpen(true);
-  };
+  }, []);
 
   /**
    * Handle edit small group button click
    */
-  const handleEditClick = (group: SmallGroup) => {
+  const handleEditClick = useCallback((group: SmallGroup) => {
     setSelectedGroup(group);
     setIsFormOpen(true);
-  };
+  }, []);
 
   /**
    * Handle form close
    */
-  const handleFormClose = () => {
+  const handleFormClose = useCallback(() => {
     setIsFormOpen(false);
     setSelectedGroup(null);
-  };
+  }, []);
 
   /**
    * Handle form submission
    */
-  const handleFormSubmit = async (data: SmallGroupFormData) => {
+  const handleFormSubmit = useCallback(async (data: SmallGroupFormData) => {
     try {
       if (selectedGroup) {
         // Update existing group
@@ -99,128 +103,128 @@ const SmallGroups: React.FC = () => {
       showToast('error', errorMessage);
       throw error; // Re-throw to prevent form from closing
     }
-  };
+  }, [selectedGroup, showToast, loadSmallGroups]);
 
   /**
    * Handle delete small group button click
    */
-  const handleDeleteClick = (group: SmallGroup) => {
+  const handleDeleteClick = useCallback((group: SmallGroup) => {
     // Handled by ArchiveButton component
-  };
+  }, []);
 
   /**
    * Handle archive success callback
    */
-  const handleArchiveSuccess = async () => {
+  const handleArchiveSuccess = useCallback(async () => {
     await loadSmallGroups();
-  };
+  }, [loadSmallGroups]);
 
   /**
-   * Format meeting day and time for display
+   * Handle view details button click
    */
-  const formatMeetingTime = (day: string, time: string) => {
-    return `${day}s at ${time}`;
-  };
+  const handleViewDetails = useCallback((group: SmallGroup) => {
+    // Navigate to group detail page
+    window.location.href = `/small-groups/${group.id}`;
+  }, []);
+
+  /**
+   * Handle manage members button click
+   */
+  const handleManageMembers = useCallback((group: SmallGroup) => {
+    // TODO: Open manage members modal
+    console.log('Manage members for group:', group);
+  }, []);
 
   return (
     <div>
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Small Groups</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Manage fellowship groups and community connections
-          </p>
+      {/* Page Header */}
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-neutral-900">Small Groups</h1>
+            <p className="text-base text-neutral-600 mt-2">
+              Manage small groups and their members
+            </p>
+          </div>
+          {isAdmin && (
+            <Button onClick={handleAddClick} size="lg">
+              <Plus className="h-5 w-5 mr-2" />
+              Create Group
+            </Button>
+          )}
         </div>
-        {isAdmin && (
-          <Button onClick={handleAddClick} className="w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Small Group
-          </Button>
-        )}
+
+        {/* View Toggle */}
+        <div className="flex items-center gap-2 bg-neutral-100 p-1 rounded-lg w-fit">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
+              viewMode === 'grid'
+                ? 'bg-white text-primary-600 shadow-sm font-medium'
+                : 'text-neutral-600 hover:text-neutral-900'
+            }`}
+          >
+            <Grid className="h-4 w-4" />
+            <span className="text-sm">Grid View</span>
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
+              viewMode === 'list'
+                ? 'bg-white text-primary-600 shadow-sm font-medium'
+                : 'text-neutral-600 hover:text-neutral-900'
+            }`}
+          >
+            <List className="h-4 w-4" />
+            <span className="text-sm">List View</span>
+          </button>
+        </div>
       </div>
 
       {/* Loading State */}
       {isLoading && (
-        <div className="text-center py-12">
-          <p className="text-gray-600">Loading small groups...</p>
+        <div className="text-center py-16">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
+          <p className="text-neutral-600">Loading small groups...</p>
         </div>
       )}
 
       {/* Empty State */}
       {!isLoading && smallGroups.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-600">
-            No small groups yet. {isAdmin && 'Click "Add Small Group" to create one.'}
+        <Card className="text-center py-16">
+          <Users className="h-16 w-16 text-neutral-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-neutral-900 mb-2">No Small Groups Yet</h3>
+          <p className="text-neutral-600 mb-6">
+            {isAdmin 
+              ? 'Get started by creating your first small group.' 
+              : 'Check back later for small group opportunities.'}
           </p>
-        </div>
+          {isAdmin && (
+            <Button onClick={handleAddClick}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Group
+            </Button>
+          )}
+        </Card>
       )}
 
-      {/* Small Groups Grid */}
+      {/* Small Groups Grid/List View */}
       {!isLoading && smallGroups.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className={
+          viewMode === 'grid'
+            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+            : 'space-y-4'
+        }>
           {smallGroups.map((group) => (
-            <Card key={group.id} className="p-6 hover:shadow-lg transition-shadow">
-              {/* Group Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    {group.name}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Led by {group.leader_name}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
-                  <Users className="h-4 w-4" />
-                  <span className="text-sm font-medium">
-                    {group.member_count || 0}
-                  </span>
-                </div>
-              </div>
-
-              {/* Group Description */}
-              {group.description && (
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                  {group.description}
-                </p>
-              )}
-
-              {/* Meeting Details */}
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center text-gray-600">
-                  <span className="font-medium mr-2">Meets:</span>
-                  <span>{formatMeetingTime(group.meeting_day, group.meeting_time)}</span>
-                </div>
-                <div className="flex items-center text-gray-600">
-                  <span className="font-medium mr-2">Location:</span>
-                  <span>{group.location}</span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              {isAdmin && (
-                <div className="mt-4 pt-4 border-t border-gray-200 flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => handleEditClick(group)}
-                  >
-                    Edit
-                  </Button>
-                  <ArchiveButton
-                    itemType="small-groups"
-                    itemId={group.id}
-                    itemName={group.name}
-                    onArchiveSuccess={handleArchiveSuccess}
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                  />
-                </div>
-              )}
-            </Card>
+            <GroupCard
+              key={group.id}
+              group={group}
+              viewMode={viewMode}
+              onViewDetails={handleViewDetails}
+              onEdit={isAdmin ? handleEditClick : undefined}
+              onManageMembers={isAdmin ? handleManageMembers : undefined}
+              showActions={true}
+            />
           ))}
         </div>
       )}

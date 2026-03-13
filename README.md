@@ -1,19 +1,30 @@
 # Mahayahay Free Methodist Church Management System
 
-A comprehensive church management system built with Laravel 8 and React/TypeScript. This modern SaaS-style application helps manage church members, leadership, events, finances, and analytics with a clean, professional interface.
+A comprehensive church management system built with Laravel 8 and React/TypeScript featuring a modern, accessible UI/UX design. This SaaS-style application helps manage church members, leadership, events, finances, and analytics with a clean, professional, and WCAG 2.1 AA compliant interface.
 
 ## Features
 
-- **Dashboard Overview**: Quick stats, attendance trends, and recent activities
-- **Member Directory**: Searchable directory with status tracking and small group management
-- **Leadership Directory**: Staff profiles with photos, roles, and contact information
-- **Financial Management**: Tithe tracking, financial reports, and analytics
-- **Event Management**: Create and track church events with attendance recording
-- **Reports & Analytics**: Financial and demographic reports with PDF export
-- **Small Groups**: Manage fellowship groups and member assignments
-- **Activity Logging**: Comprehensive audit trail of system activities
-- **User Management**: Role-based access control (Admin, Staff, Read-Only)
-- **Settings**: Church details, notification preferences, and user profiles
+### Core Functionality
+- **Dashboard Overview**: Real-time stats, interactive attendance charts, and activity feeds
+- **Member Directory**: Advanced search and filtering with status tracking and small group management
+- **Leadership Directory**: Staff profiles with photos, roles, contact information, and organizational structure
+- **Financial Management**: Comprehensive offering and expense tracking with budget management and visual analytics
+- **Event Management**: Full-featured event creation with calendar views and attendance tracking
+- **Reports & Analytics**: Financial, demographic, and ministry reports with PDF/Excel export
+- **Small Groups**: Fellowship group management with member assignments and meeting schedules
+- **Activity Logging**: Comprehensive audit trail with real-time updates and advanced filtering
+- **User Management**: Role-based access control with granular permissions (Admin, Staff, Read-Only)
+- **Settings**: Comprehensive configuration for church details, notifications, security, and integrations
+
+### Modern UI/UX Features
+- **Design System**: Comprehensive component library with 30+ reusable React components
+- **Responsive Design**: Fully optimized for desktop, tablet, and mobile devices (320px to 2560px)
+- **Dark Mode**: System-aware theme switching with light and dark modes
+- **Accessibility**: WCAG 2.1 AA compliant with keyboard navigation and screen reader support
+- **Performance**: Code splitting, lazy loading, and optimized rendering for fast load times
+- **Interactive Components**: Rich modals, toasts, dropdowns, date pickers, and data tables
+- **Visual Analytics**: Interactive charts and graphs using Recharts library
+- **Form Validation**: Real-time validation with helpful error messages
 
 ## Technology Stack
 
@@ -28,11 +39,15 @@ A comprehensive church management system built with Laravel 8 and React/TypeScri
 - React 18.2 with TypeScript
 - Laravel Mix for asset compilation
 - React Router 6.30 for navigation
-- Tailwind CSS 3.3 for styling
+- Tailwind CSS 3.3 for styling with custom design tokens
 - Lucide React for icons
-- ApexCharts for data visualization
-- Axios for API communication
+- Recharts for interactive data visualization
+- React Query (@tanstack/react-query) for data fetching and caching
+- Zustand for global state management
+- React Hook Form + Zod for form validation
+- Radix UI for accessible component primitives
 - Framer Motion for animations
+- Axios for API communication
 
 ## Architecture
 
@@ -48,11 +63,24 @@ This application uses a unified single-server architecture where Laravel serves 
 ```
 church-management-system/
 ├── app/                    # Laravel application code
+│   ├── Http/Controllers/   # API controllers
+│   ├── Models/             # Eloquent models
+│   ├── Services/           # Business logic services
+│   └── Repositories/       # Data access layer
 ├── resources/
 │   ├── js/                 # React application source
 │   │   ├── components/     # React components
-│   │   ├── contexts/       # React contexts
+│   │   │   ├── ui/         # Design system components (Button, Card, Table, etc.)
+│   │   │   ├── dashboard/  # Dashboard-specific components
+│   │   │   ├── members/    # Member management components
+│   │   │   ├── events/     # Event management components
+│   │   │   ├── finance/    # Finance components
+│   │   │   └── ...         # Other feature components
+│   │   ├── contexts/       # React contexts (Theme, Auth)
 │   │   ├── hooks/          # Custom React hooks
+│   │   │   ├── queries/    # React Query hooks
+│   │   │   └── ...         # Other hooks
+│   │   ├── stores/         # Zustand stores
 │   │   ├── lib/            # Utilities and API client
 │   │   ├── pages/          # Page components
 │   │   ├── __tests__/      # Test files
@@ -70,7 +98,10 @@ church-management-system/
 ├── routes/
 │   ├── api.php             # API routes
 │   └── web.php             # Web routes (SPA catch-all)
+├── .kiro/specs/            # Feature specifications
+│   └── modern-ui-ux-redesign/  # Modern UI documentation
 ├── webpack.mix.js          # Laravel Mix configuration
+├── tailwind.config.ts      # Tailwind CSS configuration
 ├── tsconfig.json           # TypeScript configuration
 └── package.json            # Node dependencies and scripts
 ```
@@ -214,9 +245,93 @@ npm run prod
 # Backend tests
 php artisan test
 
-# Frontend tests
+# Frontend unit tests
 npm test
+
+# Frontend tests with coverage
+npm run test:coverage
+
+# Run specific test file
+npm test -- Button.test.tsx
+
+# Property-based tests
+npm test -- property.test.tsx
+
+# Integration tests
+npm test -- integration.test.tsx
 ```
+
+## Modern UI/UX Design System
+
+The application features a comprehensive design system built with React, TypeScript, and Tailwind CSS.
+
+### Design Tokens
+
+**Color Palette:**
+- Primary colors (blue): Used for main actions and branding
+- Neutral colors (gray): Used for text, backgrounds, and borders
+- Semantic colors: Success (green), Warning (yellow), Error (red), Info (blue)
+
+**Typography:**
+- Font family: Inter (sans-serif), JetBrains Mono (monospace)
+- Scale: Display, H1-H4, Large, Base, Small, Tiny
+- Line heights optimized for readability
+
+**Spacing:**
+- 8-point grid system (4px, 8px, 12px, 16px, 24px, 32px, etc.)
+- Consistent padding and margins across components
+
+### Component Library
+
+**Atomic Components (30+ components):**
+- **Atoms**: Button, Input, Badge, Icon, Label, Checkbox, Radio, Switch
+- **Molecules**: Card, Table, Select, DatePicker, Pagination, Form Field
+- **Organisms**: Modal, Toast, Sidebar, Header, Layout, Navigation
+
+**Component Features:**
+- TypeScript interfaces for type safety
+- Multiple variants and sizes
+- Accessible by default (WCAG 2.1 AA)
+- Responsive design built-in
+- Dark mode support
+- Comprehensive test coverage
+
+### Accessibility Features
+
+- **Keyboard Navigation**: All interactive elements accessible via keyboard
+- **Screen Reader Support**: Proper ARIA labels and semantic HTML
+- **Color Contrast**: WCAG AA compliant (4.5:1 for normal text, 3:1 for large text)
+- **Focus Indicators**: Visible focus states for all interactive elements
+- **Skip Links**: Skip to main content for keyboard users
+- **Responsive Text**: Readable at all zoom levels (up to 200%)
+
+### Theme System
+
+**Light and Dark Modes:**
+- System preference detection
+- Manual theme toggle
+- Persistent theme selection (localStorage)
+- Smooth transitions between themes
+- All components support both themes
+
+### Performance Optimizations
+
+- **Code Splitting**: Pages loaded on-demand
+- **Lazy Loading**: Components and images loaded when needed
+- **Memoization**: Expensive calculations cached
+- **Virtual Scrolling**: Efficient rendering of large lists
+- **Debouncing**: Optimized search and filter inputs
+- **Bundle Size**: Optimized for fast initial load
+
+### Documentation
+
+Comprehensive documentation available in `.kiro/specs/modern-ui-ux-redesign/`:
+- **Design Document**: Complete design specifications
+- **Component API Documentation**: Detailed component props and usage
+- **Visual Component Guide**: Visual examples of all components
+- **Quick Reference**: Quick lookup for common patterns
+- **User Guide**: End-user documentation
+- **Accessibility Guide**: Accessibility features and best practices
 
 ## API Documentation
 
@@ -740,11 +855,12 @@ Response: [
 For detailed development instructions, see [DEVELOPMENT.md](DEVELOPMENT.md), which covers:
 
 - **Adding React Components** - How to create new components with TypeScript
-- **Writing Tests** - Unit tests and integration tests with Jest
+- **Using the Design System** - Working with design tokens and components
+- **Writing Tests** - Unit tests, property-based tests, and integration tests
 - **Using Path Aliases** - Import shortcuts with `@/` prefix
 - **Environment Variables** - Configuration for frontend and backend
 - **Build Process** - Understanding Laravel Mix compilation
-- **Best Practices** - Code style, performance, and security guidelines
+- **Best Practices** - Code style, performance, accessibility, and security guidelines
 
 ### Quick Reference
 
@@ -753,19 +869,37 @@ For detailed development instructions, see [DEVELOPMENT.md](DEVELOPMENT.md), whi
 // resources/js/components/MyComponent.tsx
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 interface MyComponentProps {
   title: string;
+  onAction?: () => void;
 }
 
-export const MyComponent: React.FC<MyComponentProps> = ({ title }) => {
+export const MyComponent: React.FC<MyComponentProps> = ({ title, onAction }) => {
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-semibold">{title}</h2>
-      <Button>Click me</Button>
-    </div>
+    <Card>
+      <h2 className="text-xl font-semibold mb-4">{title}</h2>
+      <Button onClick={onAction}>Click me</Button>
+    </Card>
   );
 };
+```
+
+**Using Design System Components:**
+```typescript
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Table } from '@/components/ui/table';
+import { Modal } from '@/components/ui/modal';
+import { toast } from '@/components/ui/toast';
+
+// All components support variants, sizes, and accessibility features
+<Button variant="primary" size="md">Save</Button>
+<Badge variant="success">Active</Badge>
+<Input label="Email" type="email" error={errors.email} />
 ```
 
 **Adding Tests:**

@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Home, ArrowLeft } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 
@@ -30,9 +30,11 @@ interface ErrorBoundaryState {
  * Features:
  * - Catches unhandled errors in React components
  * - Displays user-friendly error message
- * - Provides options to retry or go home
+ * - Provides recovery options (reload, go back, go home)
  * - Logs errors for debugging
+ * - Shows detailed error information in development mode
  * 
+ * Design Reference: Error Handling section
  * Validates Requirements: 6.6
  */
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -59,7 +61,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
    * Log error details
    */
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log error to console
+    // Log error to console for debugging
     console.error('ErrorBoundary caught an error:', error, errorInfo);
 
     // Update state with error info
@@ -77,14 +79,17 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   /**
-   * Reset error boundary state
+   * Reset error boundary state and reload the page
    */
-  handleReset = (): void => {
-    this.setState({
-      hasError: false,
-      error: null,
-      errorInfo: null,
-    });
+  handleReload = (): void => {
+    window.location.reload();
+  };
+
+  /**
+   * Navigate back to previous page
+   */
+  handleGoBack = (): void => {
+    window.history.back();
   };
 
   /**
@@ -104,47 +109,47 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
         return this.props.fallback;
       }
 
-      // Default error UI
+      // Default error UI with modern design system styling
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <Card className="max-w-2xl w-full p-8">
+        <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900 flex items-center justify-center p-4">
+          <Card className="max-w-2xl w-full p-8 shadow-xl">
             <div className="text-center">
               {/* Error Icon */}
               <div className="flex justify-center mb-6">
-                <div className="rounded-full bg-red-100 p-4">
-                  <AlertTriangle className="h-12 w-12 text-red-600" />
+                <div className="rounded-full bg-error-100 dark:bg-error-900/20 p-4">
+                  <AlertTriangle className="h-12 w-12 text-error-600 dark:text-error-400" />
                 </div>
               </div>
 
               {/* Error Title */}
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
                 Oops! Something went wrong
               </h1>
 
               {/* Error Message */}
-              <p className="text-gray-600 mb-6">
+              <p className="text-neutral-600 dark:text-neutral-400 mb-6">
                 We're sorry, but something unexpected happened. The error has been logged 
-                and we'll look into it. Please try refreshing the page or return to the home page.
+                and we'll look into it. Please try one of the options below to continue.
               </p>
 
               {/* Error Details (only in development) */}
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <div className="mb-6 text-left">
-                  <details className="bg-gray-100 rounded-lg p-4">
-                    <summary className="cursor-pointer font-medium text-gray-900 mb-2">
+                  <details className="bg-neutral-100 dark:bg-neutral-800 rounded-lg p-4">
+                    <summary className="cursor-pointer font-medium text-neutral-900 dark:text-neutral-100 mb-2">
                       Error Details (Development Only)
                     </summary>
                     <div className="space-y-2">
                       <div>
-                        <p className="text-sm font-medium text-gray-700">Error:</p>
-                        <pre className="text-xs text-red-600 overflow-auto p-2 bg-white rounded">
+                        <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Error:</p>
+                        <pre className="text-xs text-error-600 dark:text-error-400 overflow-auto p-2 bg-white dark:bg-neutral-900 rounded">
                           {this.state.error.toString()}
                         </pre>
                       </div>
                       {this.state.errorInfo && (
                         <div>
-                          <p className="text-sm font-medium text-gray-700">Component Stack:</p>
-                          <pre className="text-xs text-gray-600 overflow-auto p-2 bg-white rounded max-h-48">
+                          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Component Stack:</p>
+                          <pre className="text-xs text-neutral-600 dark:text-neutral-400 overflow-auto p-2 bg-white dark:bg-neutral-900 rounded max-h-48">
                             {this.state.errorInfo.componentStack}
                           </pre>
                         </div>
@@ -157,11 +162,20 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button
-                  onClick={this.handleReset}
+                  onClick={this.handleReload}
+                  variant="primary"
                   className="flex items-center gap-2"
                 >
                   <RefreshCw className="h-4 w-4" />
-                  Try Again
+                  Reload Page
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={this.handleGoBack}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Go Back
                 </Button>
                 <Button
                   variant="outline"
@@ -169,7 +183,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
                   className="flex items-center gap-2"
                 >
                   <Home className="h-4 w-4" />
-                  Go to Home
+                  Go Home
                 </Button>
               </div>
             </div>
